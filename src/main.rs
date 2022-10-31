@@ -4,6 +4,7 @@ use std::future::Future;
 use data_encoding::HEXUPPER;
 use rocket::{Build, Rocket};
 use rocket::form::Form;
+use rocket::fs::NamedFile;
 use rocket::http::CookieJar;
 use rocket::response::content::RawHtml;
 use rocket::response::Redirect;
@@ -53,7 +54,7 @@ async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>) -> RawHtml<String> 
 				for mut file in &user.get_files(&mut *db).await {
 
 					files_str+=
-						&tag_str!(format!("a href='/get/{}'",&file.ID),
+						&tag_str!(format!("a href='/get/{}/{}'",&file.ID,&file.Filename),
 							tag!(h5, &file.to_string())
 						);
 				}
@@ -66,13 +67,13 @@ async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>) -> RawHtml<String> 
 	},jar, db).await
 }
 
-#[get("/get/<file_id>")]
-async fn get_file_by_id<'a>(jar: &'a CookieJar<'_>, mut db: Connection<SQL>, file_id: i32)->Result<Vec<u8>,&'a str>{
+#[get("/get/<file_id>/<file_name>")]
+async fn get_file_by_id<'a>(jar: &'a CookieJar<'_>, mut db: Connection<SQL>, file_id: i32,file_name:String)->Result<Vec<u8>,&'a str>{
 	//TODO przedstawić to troche lepiej i wgl pozwolić na dodawanie nowych plików
 	if let Some(user) = User::get_from_cookies(&mut *db, jar).await{
 		return match user.get_file(file_id, &mut *db).await {
 			None => Err("nie masz dostępu do tego pliku!"),
-			Some(file) => Ok(HEXUPPER.decode(&file.Content.as_bytes()).unwrap())
+			Some(file) => Ok(HEXUPPER.decode(&file.Content.as_bytes()).unwrap())//TODO przy wielkich stringach contentu nie działą :(
 		}
 	}
 	Err("Musisz się zalogować")
