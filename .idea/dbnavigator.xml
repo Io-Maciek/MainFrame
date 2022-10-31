@@ -29,14 +29,25 @@
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
     <connection id="8836a11b-9ff8-461d-b4ef-55eaebaebcdd">
-      <console name="Connection" type="STANDARD" schema="main" session="Pool"><![CDATA[SELECT * FROM Users]]></console>
+      <console name="Connection" type="STANDARD" schema="main" session="Session 1"><![CDATA[/*CREATE TABLE Files(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    UserID INTEGER NOT NULL,
+                    Filename TEXT NOT NULL,
+                    Content TEXT NOT NULL,
+                    FOREIGN KEY(UserID) REFERENCES Users(ID));*/
+--INSERT INTO Files (UserID, "Filename", "Content") values (1,'test.txt','ABCD');              
+--SELECT F.*,U."Username" FROM Files AS F JOIN Users AS U ON F."UserID"=U.ID;
+--SELECT F.*,U."Username" FROM Files AS F JOIN Users AS U ON F.UserID=U.ID WHERE U.ID=21
+SELECT * FROM Files
+UPDATE "Files" SET Content='ahaa']]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
     <open-files />
   </component>
   <component name="DBNavigator.Project.DatabaseSessionManager">
-    <connection id="8836a11b-9ff8-461d-b4ef-55eaebaebcdd" />
+    <connection id="8836a11b-9ff8-461d-b4ef-55eaebaebcdd">
+      <session name="Session 1" id="2958a844-ec59-4891-bdbc-459a5afdf6c8" />
+    </connection>
   </component>
   <component name="DBNavigator.Project.DatasetFilterManager">
     <filter-actions connection-id="8836a11b-9ff8-461d-b4ef-55eaebaebcdd" dataset="main.sqlite_sequence" active-filter-id="" />
@@ -67,7 +78,9 @@
     <diagnostics-history />
   </component>
   <component name="DBNavigator.Project.ScriptExecutionManager" clear-outputs="true">
-    <recently-used-interfaces />
+    <recently-used-interfaces>
+      <mapping database-type="SQLITE" interface-id="eb4950e9-5d70-4774-8cbe-56cb3dd6c41a" />
+    </recently-used-interfaces>
   </component>
   <component name="DBNavigator.Project.Settings">
     <connections>
@@ -93,7 +106,7 @@
           <deprecated-pwd value="" />
         </database>
         <properties>
-          <auto-commit value="false" />
+          <auto-commit value="true" />
         </properties>
         <ssh-settings>
           <active value="false" />
@@ -476,7 +489,9 @@
         <prompt-execution value="false" />
       </statement-execution>
       <script-execution>
-        <command-line-interfaces />
+        <command-line-interfaces>
+          <value id="eb4950e9-5d70-4774-8cbe-56cb3dd6c41a" name="SQLite terminal" executable-path="A:/Pobrane/sqlite-tools-win32-x86-3390400/sqlite-tools-win32-x86-3390400/sqlite3.exe" database-type="SQLITE" />
+        </command-line-interfaces>
         <execution-timeout value="300" />
       </script-execution>
       <method-execution>

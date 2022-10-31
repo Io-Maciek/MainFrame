@@ -104,12 +104,12 @@ macro_rules! create {
 
 			async fn insert(self,db: &mut PoolConnection<$sql>)->$struct{
 					let q = self.get_insert_string();
-					sqlx::query_as::<_,$struct>(q.as_str()).fetch_one(&mut *db).await.ok().unwrap()
+					sqlx::query_as::<_,$struct>(q.as_str()).fetch_one(db).await.ok().unwrap()
 			}
 
 			async fn update(&self,db: &mut PoolConnection<$sql>){
 				let q = self.get_update_string();
-				sqlx::query_as::<_,$struct>(q.as_str()).fetch_one(&mut *db).await;
+				sqlx::query_as::<_,$struct>(q.as_str()).fetch_one(db).await;
 			}
 		}
 	}
