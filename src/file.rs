@@ -19,7 +19,7 @@ create!(
 impl Display for File
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-		write!(f,"{} {} {}", &self.ID,&self.UserID, &self.Filename)
+		write!(f,"{}",&self.Filename)
 	}
 }
 
