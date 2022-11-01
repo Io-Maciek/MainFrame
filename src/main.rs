@@ -2,7 +2,7 @@
 
 use std::future::Future;
 use data_encoding::HEXUPPER;
-use rocket::{Build, Rocket};
+use rocket::{Build, Data, Rocket};
 use rocket::form::Form;
 use rocket::fs::NamedFile;
 use rocket::http::CookieJar;
@@ -84,11 +84,57 @@ async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>) -> RawHtml<String> 
 
 				tag!(h5,format!("Zalogowano! {}",user))
 					+
-					&tag_str!("button", "Klik!")
+					&tag!(form action="/plik" method="POST" enctype="multipart/form-data",
+						tag_str!("input type='file' id='myfile' name='myfile'"),
+						tag_str!("input class='btn btn-success' type='submit' value='Wyślij'")
+					)
 					+
 					&files_str
 			}
 		}, jar, db).await
+}
+use rocket::http::ContentType;
+use rocket_multipart_form_data::{FileField, mime, MultipartFormData, MultipartFormDataError, MultipartFormDataField, MultipartFormDataOptions};
+
+#[post("/plik", data="<data>")]
+async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>,content_type: &ContentType, data: Data<'_>)->String{
+	//TODO przedstawić graficznie lepiej wysyłanie plików
+	match User::get_from_cookies(&mut *db, jar).await{
+		None => {
+			String::from("Trzeba być zalogowanym!")
+		}
+		Some(user) => {
+			let mut options = MultipartFormDataOptions::with_multipart_form_data_fields(
+				vec![
+					MultipartFormDataField::file("myfile").size_limit(10_000_000).content_type_by_string(Some(mime::STAR_STAR)).unwrap(),//10MB
+				]
+			);
+
+			match MultipartFormData::parse(content_type, data, options).await{
+				Ok(multipart_form_data) => {
+					match multipart_form_data.files.get("myfile"){
+						None => String::from("Brak pliku"),
+						Some(files) => {
+							let file = &files[0];
+							let pdf = HEXUPPER.encode(&std::fs::read(&file.path).unwrap());
+							File{
+								ID: 0,
+								UserID: user.ID,
+								Filename: file.file_name.as_ref().unwrap().clone(),
+								Content: pdf
+							}.insert(&mut *db).await;
+
+							//TODO zapisanie pliku do bazy
+							String::from("Udało się!")
+						}
+					}
+				}
+				Err(err) => {
+					format!("{:?}",err)
+				}
+			}
+		}
+	}
 }
 
 #[get("/get/<file_id>/<file_name>")]
@@ -147,7 +193,7 @@ fn rocket() -> Rocket<Build> {
 			idle_timeout: None,
 		}));
 
-	rocket::custom(figment).attach(SQL::init()).mount("/", routes![index, index_post,index_login,index_logout,get_file_by_id])
+	rocket::custom(figment).attach(SQL::init()).mount("/", routes![index, index_post,index_login,index_logout,get_file_by_id,send_file])
 }
 
 async fn page_template<T>(body: T, jar: &CookieJar<'_>, mut db: Connection<SQL>) -> RawHtml<String>
