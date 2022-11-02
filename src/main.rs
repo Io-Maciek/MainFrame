@@ -121,11 +121,12 @@ async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>,content_type: &C
 								ID: 0,
 								UserID: user.ID,
 								Filename: file.file_name.as_ref().unwrap().clone(),
-								Content: pdf
+								Content: pdf,
+								MimeType: file.content_type.as_ref().map(|x| x.to_string())
 							}.insert(&mut *db).await;
 
 							//TODO zapisanie pliku do bazy
-							String::from("Udało się!")
+							format!("Udało się!")
 						}
 					}
 				}
@@ -138,22 +139,33 @@ async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>,content_type: &C
 }
 
 #[get("/get/<file_id>/<file_name>")]
-async fn get_file_by_id<'a>(jar: &'a CookieJar<'_>, mut db: Connection<SQL>, file_id: i32, file_name: String) -> Result<Vec<u8>, &'a str> {
-	//TODO przedstawić to troche lepiej i wgl pozwolić na dodawanie nowych plików
+async fn get_file_by_id<'a>(jar: &'a CookieJar<'_>, mut db: Connection<SQL>, file_id: i32, file_name: String) -> Result<RawHtml<String>, &'a str>{ //Result<Vec<u8>, &'a str> {
+	//TODO przedstawić to troche lepiej
+
 	sqlx::query_as::<_, User>("").bind(Vec::<u8>::new());
 	match User::get_from_cookies(&mut *db, jar).await {
 		None => Err("Musisz się zalogować"),//niezalogowany
 		Some(user) => {                //zalogowany
 			match user.get_file(file_id, &mut *db).await {
 				None => Err("nie masz dostępu do tego pliku!"),    //nie znaleziono pliku
-				Some(file) => {                            //plik jest
+				Some(file) => {                            	//plik jest
 					let bytes = file.Content.as_bytes();
-					let hex = HEXUPPER.decode(bytes).unwrap();//TODO przy wielkich stringach contentu nie działą :(
-					Ok(hex)
+					let hex = HEXUPPER.decode(bytes).unwrap();
+					//Ok(hex)
+					Ok(RawHtml(
+						format!("
+						<iframe frameborder='0' id='ItemPreview' src='' width='98%' height='98%'></iframe>
+						<script>
+							document.getElementById('ItemPreview').src = 'data:{};base64,{}';
+						</script>
+						",file.MimeType.unwrap(),base64::encode(&hex))
+
+					))
 				}
 			}
 		}
 	}
+
 }
 
 #[post("/", data = "<maker_user>")]

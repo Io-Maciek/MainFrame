@@ -12,32 +12,43 @@ create!(
 		i32,
 		pub UserID:i32,
 		pub Filename:String,
-		pub Content:String
+		pub Content:String,
+		pub MimeType:Option<String>
 	}
 );
 
 impl Display for File
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-		write!(f,"{}",&self.Filename)
+		write!(f, "{}", &self.Filename)
 	}
 }
 
 impl Insertable for File {
 	fn get_insert_string(&self) -> String {
-		format!(r"INSERT INTO Files (UserID, Filename, Content) VALUES ({},'{}','{}') RETURNING *",
-				&self.UserID, &self.Filename, &self.Content)
+		format!(r"INSERT INTO Files (UserID, Filename, Content, MimeType) VALUES ({},'{}','{}', {}) RETURNING *",
+				&self.UserID, &self.Filename, &self.Content,
+				match &self.MimeType {
+					None => "null".to_string(),
+					Some(t) => format!("'{}'", t)
+				}
+		)
 	}
 
 	fn get_update_string(&self) -> String {
-		format!(r"UPDATE Files SET UserID={}, Filename='{}', Content='{}' WHERE ID = {} RETURNING *",
-				&self.UserID, &self.Filename, &self.Content, &self.ID)
+		format!(r"UPDATE Files SET UserID={}, Filename='{}', Content='{}', MimeType={} WHERE ID = {} RETURNING *",
+				&self.UserID, &self.Filename, &self.Content, &self.ID,
+				match &self.MimeType {
+					None => "null".to_string(),
+					Some(t) => format!("'{}'", t)
+				}
+		)
 	}
 }
 
-impl File{
-	pub async fn get_for_user(db: &mut PoolConnection<Sqlite>,user: &User,)->Vec<File>{
-		sqlx::query_as::<_, File>(&format!("SELECT F.* FROM Files AS F JOIN Users AS U ON F.UserID=U.ID WHERE U.ID={}",&user.ID))
+impl File {
+	pub async fn get_for_user(db: &mut PoolConnection<Sqlite>, user: &User) -> Vec<File> {
+		sqlx::query_as::<_, File>(&format!("SELECT F.* FROM Files AS F JOIN Users AS U ON F.UserID=U.ID WHERE U.ID={}", &user.ID))
 			.fetch_all(db).await.ok().unwrap()
 	}
 }
