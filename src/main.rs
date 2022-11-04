@@ -1,5 +1,3 @@
-#![feature(slice_concat_trait)]
-
 use std::future::Future;
 use data_encoding::HEXUPPER;
 use rocket::{Build, Data, Rocket};
@@ -39,8 +37,9 @@ async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>) -> RawHtml<String> 
 				//
 				 */
 
-
-				tag!(form action="/" method="POST",
+				tag!(h4,"Zarejestruj się")
+					+
+				&tag!(form action="/" method="POST",
 					tag!(label, "Username:"),
 					tag_str!("input type='text' id='uname' name='uname'"),
 					tag!(label, "Password:"),
@@ -48,7 +47,7 @@ async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>) -> RawHtml<String> 
 					tag_str!("input class='btn btn-success' type='submit' value='Stwórz'")
 				)
 					+
-					"<br><br>"
+					"<br><br>"+&tag!(h4,"Zaloguj sie")
 					+
 				&tag!(form action="/login" method="POST",
 					tag!(label, "Username:"),
@@ -125,7 +124,6 @@ async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>,content_type: &C
 								MimeType: file.content_type.as_ref().map(|x| x.to_string())
 							}.insert(&mut *db).await;
 
-							//TODO zapisanie pliku do bazy
 							format!("Udało się!")
 						}
 					}
@@ -142,7 +140,7 @@ async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>,content_type: &C
 async fn get_file_by_id<'a>(jar: &'a CookieJar<'_>, mut db: Connection<SQL>, file_id: i32, file_name: String) -> Result<RawHtml<String>, &'a str>{ //Result<Vec<u8>, &'a str> {
 	//TODO przedstawić to troche lepiej
 
-	sqlx::query_as::<_, User>("").bind(Vec::<u8>::new());
+	//sqlx::query_as::<_, User>("").bind(Vec::<u8>::new());
 	match User::get_from_cookies(&mut *db, jar).await {
 		None => Err("Musisz się zalogować"),//niezalogowany
 		Some(user) => {                //zalogowany
