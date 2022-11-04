@@ -6,7 +6,7 @@ use rocket::fs::NamedFile;
 use rocket::http::CookieJar;
 use rocket::http::ext::IntoCollection;
 use rocket::response::content::RawHtml;
-use rocket::response::Redirect;
+use rocket::response::{Flash, Redirect};
 use crate::sql_connectivity::SQL;
 use rocket_db_pools::{Connection, Database};
 use sqlx::pool::PoolConnection;
@@ -27,7 +27,7 @@ mod user_maker;
 mod file;
 
 #[get("/")]
-async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>) -> RawHtml<String> {
+async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>, flash: Option<FlashMessage<'_>>) -> RawHtml<String> {
 	page_template(
 		match User::get_from_cookies(&mut *db, &jar.clone()).await {
 			None => {
@@ -36,10 +36,25 @@ async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>) -> RawHtml<String> 
 					GŁÓWNA STRONA DLA NIEZALOGOWANEGO UŻYTKOWNIKA
 				//
 				 */
+				let mut msg_login = String::new();
+				let mut msg_rej = String::new();
+
+				if flash.is_some() {
+					let fl = flash.unwrap().into_inner();
+					match &fl.0 == "error_log" {
+						true => msg_login = tag!(h6 style="color: red;", fl.1),
+						false => {
+							match &fl.0 == "error_rej" {
+								true => msg_rej = tag!(h6 style="color: red;", fl.1),
+								false => msg_rej = tag!(h6 style="color: green;", fl.1),
+							}
+						}
+					}
+				}
 
 				tag!(h4,"Zarejestruj się")
 					+
-				&tag!(form action="/" method="POST",
+					&tag!(form action="/" method="POST",
 					tag!(label, "Username:"),
 					tag_str!("input type='text' id='uname' name='uname'"),
 					tag!(label, "Password:"),
@@ -47,14 +62,18 @@ async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>) -> RawHtml<String> 
 					tag_str!("input class='btn btn-success' type='submit' value='Stwórz'")
 				)
 					+
-					"<br><br>"+&tag!(h4,"Zaloguj sie")
+					&msg_rej
 					+
-				&tag!(form action="/login" method="POST",
+					"<br><br>" + &tag!(h4,"Zaloguj sie")
+					+
+					&tag!(form action="/login" method="POST",
 					tag!(label, "Username:"),
 					tag_str!("input type='text' id='uname' name='uname'"),
 					tag!(label, "Password:"),
 					tag_str!("input type='text' id='pwd' name='pwd'"),
 					tag_str!("input class='btn btn-success' type='submit' value='Zaloguj się'")
+					+
+					&msg_login
 				)
 			}
 			Some(user) => {
@@ -92,13 +111,15 @@ async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>) -> RawHtml<String> 
 			}
 		}, jar, db).await
 }
+
 use rocket::http::ContentType;
+use rocket::request::FlashMessage;
 use rocket_multipart_form_data::{FileField, mime, MultipartFormData, MultipartFormDataError, MultipartFormDataField, MultipartFormDataOptions};
 
-#[post("/plik", data="<data>")]
-async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>,content_type: &ContentType, data: Data<'_>)->String{
+#[post("/plik", data = "<data>")]
+async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>, content_type: &ContentType, data: Data<'_>) -> String {
 	//TODO przedstawić graficznie lepiej wysyłanie plików
-	match User::get_from_cookies(&mut *db, jar).await{
+	match User::get_from_cookies(&mut *db, jar).await {
 		None => {
 			String::from("Trzeba być zalogowanym!")
 		}
@@ -109,19 +130,19 @@ async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>,content_type: &C
 				]
 			);
 
-			match MultipartFormData::parse(content_type, data, options).await{
+			match MultipartFormData::parse(content_type, data, options).await {
 				Ok(multipart_form_data) => {
-					match multipart_form_data.files.get("myfile"){
+					match multipart_form_data.files.get("myfile") {
 						None => String::from("Brak pliku"),
 						Some(files) => {
 							let file = &files[0];
 							let pdf = HEXUPPER.encode(&std::fs::read(&file.path).unwrap());
-							File{
+							File {
 								ID: 0,
 								UserID: user.ID,
 								Filename: file.file_name.as_ref().unwrap().clone(),
 								Content: pdf,
-								MimeType: file.content_type.as_ref().map(|x| x.to_string())
+								MimeType: file.content_type.as_ref().map(|x| x.to_string()),
 							}.insert(&mut *db).await;
 
 							format!("Udało się!")
@@ -129,7 +150,7 @@ async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>,content_type: &C
 					}
 				}
 				Err(err) => {
-					format!("{:?}",err)
+					format!("{:?}", err)
 				}
 			}
 		}
@@ -137,7 +158,7 @@ async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>,content_type: &C
 }
 
 #[get("/get/<file_id>/<file_name>")]
-async fn get_file_by_id<'a>(jar: &'a CookieJar<'_>, mut db: Connection<SQL>, file_id: i32, file_name: String) -> Result<RawHtml<String>, &'a str>{ //Result<Vec<u8>, &'a str> {
+async fn get_file_by_id<'a>(jar: &'a CookieJar<'_>, mut db: Connection<SQL>, file_id: i32, file_name: String) -> Result<RawHtml<String>, &'a str> { //Result<Vec<u8>, &'a str> {
 	//TODO przedstawić to troche lepiej
 
 	//sqlx::query_as::<_, User>("").bind(Vec::<u8>::new());
@@ -146,7 +167,7 @@ async fn get_file_by_id<'a>(jar: &'a CookieJar<'_>, mut db: Connection<SQL>, fil
 		Some(user) => {                //zalogowany
 			match user.get_file(file_id, &mut *db).await {
 				None => Err("nie masz dostępu do tego pliku!"),    //nie znaleziono pliku
-				Some(file) => {                            	//plik jest
+				Some(file) => {                                //plik jest
 					let bytes = file.Content.as_bytes();
 					let hex = HEXUPPER.decode(bytes).unwrap();
 					//Ok(hex)
@@ -156,31 +177,34 @@ async fn get_file_by_id<'a>(jar: &'a CookieJar<'_>, mut db: Connection<SQL>, fil
 						<script>
 							document.getElementById('ItemPreview').src = 'data:{};base64,{}';
 						</script>
-						",file.MimeType.unwrap(),base64::encode(&hex))
-
+						", file.MimeType.unwrap(), base64::encode(&hex))
 					))
 				}
 			}
 		}
 	}
-
 }
 
 #[post("/", data = "<maker_user>")]
-async fn index_post(jar: &CookieJar<'_>, mut db: Connection<SQL>, maker_user: Form<UserMaker<'_>>) -> RawHtml<String> {
-	let user = maker_user.into_inner().create_user();
-	let body = format!("{}", user.insert(&mut *db).await);
-	page_template(body, jar, db).await
+async fn index_post(jar: &CookieJar<'_>, mut db: Connection<SQL>, maker_user: Form<UserMaker<'_>>) -> Flash<Redirect> {
+	match maker_user.into_inner().create_user() {
+		Ok(user) => {
+			let user = user.insert(&mut *db).await;
+			Flash::success(Redirect::to(uri!(index)), format!(" Pomyślnie utworzono użytkownika \"{}\"", user.Username))
+		}
+		Err(err) => Flash::new(Redirect::to(uri!(index)), "error_rej", err)
+	}
 }
 
 #[post("/login", data = "<maker_user>")]
-async fn index_login(mut db: Connection<SQL>, jar: &CookieJar<'_>, maker_user: Form<UserMaker<'_>>) -> Redirect {
+async fn index_login(mut db: Connection<SQL>, jar: &CookieJar<'_>, maker_user: Form<UserMaker<'_>>) -> Result<Redirect, Flash<Redirect>> {
 	match maker_user.into_inner().check_user_login(&mut *db).await {
-		Ok(mut user) => { user.create_new_session(&mut *db, jar).await; }
-		Err(err) => println!("{}", err)
+		Ok(mut user) => {
+			user.create_new_session(&mut *db, jar).await;
+			Ok(Redirect::to(uri!(index)))
+		}
+		Err(err) => Err(Flash::new(Redirect::to(uri!(index)), "error_log", err))
 	}
-
-	Redirect::to(uri!(index))
 }
 
 #[get("/logout")]

@@ -16,7 +16,22 @@ pub struct UserMaker<'a>{
 }
 
 impl UserMaker<'_>{
-	pub fn create_user(self)->User{
+	pub fn create_user(self)->Result<User, &'static str>{
+		if &self.uname.len()<=&3{
+			return Err("Nick musi mieć przynajmniej 4 znaki")
+		}else if &self.uname.len()>=&20{
+			return Err("Nick musi być krótszy niż 20 znaków")
+		}else if self.uname.contains(char::is_whitespace){
+			return Err("Nick nie może zawierać spacji")
+		}else if &self.pwd.len()<=&5{
+			return Err("Hasło musi mieć przynajmniej 6 znaków")
+		}else if &self.pwd.len()>=&25{
+			return Err("Hasło musi być krótsze niż 25 znaków")
+		}else if self.pwd.contains(char::is_whitespace){
+			return  Err("Hasło nie może zawierać spacji")
+		}
+
+
 		const CREDENTIAL_LEN: usize = digest::SHA512_OUTPUT_LEN;
 		let n_iter = NonZeroU32::new(100_000).unwrap();
 		let rng = ring::rand::SystemRandom::new();
@@ -32,7 +47,7 @@ impl UserMaker<'_>{
 			&mut pbkdf2_hash,
 		);
 
-		User::new(self.uname.to_owned(),HEXUPPER.encode(&pbkdf2_hash),HEXUPPER.encode(&s))
+		Ok(User::new(self.uname.to_owned(),HEXUPPER.encode(&pbkdf2_hash),HEXUPPER.encode(&s)))
 	}
 
 	pub async fn check_user_login(self,db : &mut PoolConnection<Sqlite>)->Result<User, String>{
