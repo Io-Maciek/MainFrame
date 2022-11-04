@@ -5,7 +5,6 @@ use crate::SQL;
 use rocket_db_pools::Connection;
 use data_encoding::HEXUPPER;
 use std::num::NonZeroU32;
-use std::slice::Join;
 use ring::{digest, pbkdf2, rand};
 use ring::error::Unspecified;
 use ring::rand::SecureRandom;
