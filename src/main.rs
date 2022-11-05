@@ -215,8 +215,6 @@ async fn index_logout(mut db: Connection<SQL>, jar: &CookieJar<'_>) -> Redirect 
 
 #[launch]
 fn rocket() -> Rocket<Build> {
-	/*	let pdf = std::fs::read("c.pdf").unwrap();
-		println!("''{}''",HEXUPPER.encode(&pdf));*/
 
 	let figment = rocket::Config::figment().merge(("address", "0.0.0.0"))
 		.merge(("databases.MainFrame", rocket_db_pools::Config {
