@@ -1,5 +1,3 @@
-#![feature(proc_macro_hygiene, decl_macro)]
-
 use std::future::Future;
 use data_encoding::HEXUPPER;
 use rocket::{Build, Data, Request, response, Rocket, State};
