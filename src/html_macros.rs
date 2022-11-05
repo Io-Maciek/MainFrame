@@ -60,10 +60,12 @@ macro_rules! create {
 		}
 	)=>
 	{
+		use rocket::serde::Serialize;
 
 
 
 		#[derive(Debug)]
+		#[derive(Serialize)]
 		#[allow(dead_code)]
 		#[derive(sqlx::FromRow)]
 		$visibility struct $struct{

@@ -16,3 +16,8 @@ pbkdf2 = "0.11.0"
 ring = "0.16.20"
 rocket-multipart-form-data = "0.10.3"
 base64 = "0.13.1"
+serde = { version = "1.0", features = ["derive"] }
+
+[dependencies.rocket_dyn_templates]
+version = "0.1.0-rc.2"
+features = ["handlebars", "tera"]

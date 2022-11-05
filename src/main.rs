@@ -1,12 +1,14 @@
+#![feature(proc_macro_hygiene, decl_macro)]
+
 use std::future::Future;
 use data_encoding::HEXUPPER;
-use rocket::{Build, Data, Rocket};
+use rocket::{Build, Data, Request, response, Rocket, State};
 use rocket::form::Form;
 use rocket::fs::NamedFile;
-use rocket::http::CookieJar;
+use rocket::http::{CookieJar, Status};
 use rocket::http::ext::IntoCollection;
 use rocket::response::content::RawHtml;
-use rocket::response::{Flash, Redirect};
+use rocket::response::{Flash, Redirect, Responder};
 use crate::sql_connectivity::SQL;
 use rocket_db_pools::{Connection, Database};
 use sqlx::pool::PoolConnection;
@@ -15,9 +17,11 @@ use crate::file::File;
 use crate::sql_traits::Queryable;
 use crate::user_maker::UserMaker;
 use crate::users::User;
+use rocket::serde::Serialize;
 
 #[macro_use]
 extern crate rocket;
+
 
 mod html_macros;
 mod sql_connectivity;
@@ -26,90 +30,57 @@ mod users;
 mod user_maker;
 mod file;
 
-#[get("/")]
-async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>, flash: Option<FlashMessage<'_>>) -> RawHtml<String> {
-	page_template(
-		match User::get_from_cookies(&mut *db, &jar.clone()).await {
-			None => {
-				/*
-				//
-					GŁÓWNA STRONA DLA NIEZALOGOWANEGO UŻYTKOWNIKA
-				//
-				 */
-				let mut msg_login = String::new();
-				let mut msg_rej = String::new();
+#[derive(Serialize)]
+struct Message{
+	html_color:String,
+	message:String
+}
 
-				if flash.is_some() {
-					let fl = flash.unwrap().into_inner();
-					match &fl.0 == "error_log" {
-						true => msg_login = tag!(h6 style="color: red;", fl.1),
-						false => {
-							match &fl.0 == "error_rej" {
-								true => msg_rej = tag!(h6 style="color: red;", fl.1),
-								false => msg_rej = tag!(h6 style="color: green;", fl.1),
-							}
+#[get("/")]
+async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>, flash: Option<FlashMessage<'_>>) -> Template {
+	match User::get_from_cookies(&mut *db, &jar.clone()).await {
+		None => {
+			/*
+			//
+				GŁÓWNA STRONA DLA NIEZALOGOWANEGO UŻYTKOWNIKA
+			//
+			 */
+			let mut msg_login = None::<Message>;
+			let mut msg_rej = None::<Message>;
+
+			if flash.is_some() {
+				let fl = flash.unwrap().into_inner();
+				match &fl.0 == "error_log" {
+					true => msg_login = Some(Message{ html_color: "red".to_string(), message: fl.1 }),
+					false => {
+						match &fl.0 == "error_rej" {
+							true => msg_rej = Some(Message{ html_color: "red".to_string(), message: fl.1 }),
+							false => msg_rej = Some(Message{ html_color: "green".to_string(), message: fl.1 }),
 						}
 					}
 				}
-
-				tag!(h4,"Zarejestruj się")
-					+
-					&tag!(form action="/" method="POST",
-					tag!(label, "Username:"),
-					tag_str!("input type='text' id='uname' name='uname'"),
-					tag!(label, "Password:"),
-					tag_str!("input type='text' id='pwd' name='pwd'"),
-					tag_str!("input class='btn btn-success' type='submit' value='Stwórz'")
-				)
-					+
-					&msg_rej
-					+
-					"<br><br>" + &tag!(h4,"Zaloguj sie")
-					+
-					&tag!(form action="/login" method="POST",
-					tag!(label, "Username:"),
-					tag_str!("input type='text' id='uname' name='uname'"),
-					tag!(label, "Password:"),
-					tag_str!("input type='text' id='pwd' name='pwd'"),
-					tag_str!("input class='btn btn-success' type='submit' value='Zaloguj się'")
-					+
-					&msg_login
-				)
 			}
-			Some(user) => {
-				/*
-				//
-					GŁÓWNA STRONA DLA ZALOGOWANYCH
-				//
-				 */
 
+			Template::render("index_niezalogowany", context!(
+					title: "MainFrame",
+					msg_rej : msg_rej,
+					msg_login: msg_login
+				))
+		}
+		Some(user) => {
+			/*
+			//
+				GŁÓWNA STRONA DLA ZALOGOWANYCH
+			//
+			 */
 
-				let user_files = user.get_files(&mut *db).await;
-
-				let files_str = match user_files.len() > 0 {
-					true => String::from("<br><br>") +
-						&tag!(ul,
-								user_files.iter().map(|f|
-									tag!(h5,
-										tag!(li,
-											tag_str!(format!("a target='_blank' href='/get/{}/{}'",&f.ID, &f.Filename),&f.to_string())
-										)
-									)
-								).collect::<Vec<String>>().join(" ")
-							),
-					false => tag!(h6, "Brak plików do wyświetlenia")
-				};
-
-				tag!(h5,format!("Zalogowano! {}",user))
-					+
-					&tag!(form action="/plik" method="POST" enctype="multipart/form-data",
-						tag_str!("input type='file' id='myfile' name='myfile'"),
-						tag_str!("input class='btn btn-success' type='submit' value='Wyślij'")
-					)
-					+
-					&files_str
-			}
-		}, jar, db).await
+			Template::render("index_zalogowany", context! {
+				title: "MainFrame",
+				username: &user.Username,
+				files: user.get_files(&mut *db).await
+			})
+		}
+	}
 }
 
 use rocket::http::ContentType;
@@ -213,9 +184,10 @@ async fn index_logout(mut db: Connection<SQL>, jar: &CookieJar<'_>) -> Redirect 
 	Redirect::to(uri!(index))
 }
 
+
+
 #[launch]
 fn rocket() -> Rocket<Build> {
-
 	let figment = rocket::Config::figment().merge(("address", "0.0.0.0"))
 		.merge(("databases.MainFrame", rocket_db_pools::Config {
 			url: "MainFrame.db".into(),
@@ -226,7 +198,12 @@ fn rocket() -> Rocket<Build> {
 		}));
 
 	rocket::custom(figment).attach(SQL::init()).mount("/", routes![index, index_post,index_login,index_logout,get_file_by_id,send_file])
+		.attach(Template::fairing())
 }
+
+
+use rocket_dyn_templates::{Template, handlebars, context};
+use handlebars::{Handlebars, JsonRender};
 
 async fn page_template<T>(body: T, jar: &CookieJar<'_>, mut db: Connection<SQL>) -> RawHtml<String>
 	where T: std::fmt::Display {

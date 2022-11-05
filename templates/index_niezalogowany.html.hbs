@@ -1,0 +1,26 @@
+{{#*inline "page"}}
+    <h4>Zarejestruj się</h4>
+    <form action="/" method="POST">
+    <label>Username</label>
+    <input type='text' id='uname' name='uname'>
+    <label>Password</label>
+    <input type='text' id='pwd' name='pwd'>
+    <input class='btn btn-success' type='submit' value='Stwórz'>
+    </form>
+    {{#if msg_rej}}
+    <h6 style="color: {{ msg_rej.html_color }};">{{ msg_rej.message }}</h6>
+    {{/if}}
+    <br>
+    <h4>Zaloguj sie</h4>
+    <form action="/login" method="POST">
+    <label> Username</label>
+    <input type='text' id='uname' name='uname'>
+    <label>Password</label>
+    <input type='text' id='pwd' name='pwd'>
+    <input class='btn btn-success' type='submit' value='Zaloguj się'>
+    </form>
+    {{#if msg_login}}
+        <h6 style="color: {{ msg_login.html_color }};">{{ msg_login.message }}</h6>
+    {{/if}}
+{{/inline}}
+{{> layout}}
