@@ -16,6 +16,13 @@ use crate::sql_traits::Queryable;
 use crate::user_maker::UserMaker;
 use crate::users::User;
 use rocket::serde::Serialize;
+use rocket::http::ContentType;
+use rocket::request::FlashMessage;
+use rocket_multipart_form_data::{FileField, mime, MultipartFormData, MultipartFormDataError, MultipartFormDataField, MultipartFormDataOptions};
+use rocket_dyn_templates::{Template, handlebars, context};
+use handlebars::{Handlebars, JsonRender};
+use crate::handlebars::HelperDef;
+
 
 #[macro_use]
 extern crate rocket;
@@ -27,11 +34,12 @@ mod sql_traits;
 mod users;
 mod user_maker;
 mod file;
+mod hbs_helpers;
 
 #[derive(Serialize)]
-struct Message{
-	html_color:String,
-	message:String
+struct Message {
+	html_color: String,
+	message: String,
 }
 
 #[get("/")]
@@ -49,21 +57,21 @@ async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>, flash: Option<Flash
 			if flash.is_some() {
 				let fl = flash.unwrap().into_inner();
 				match &fl.0 == "error_log" {
-					true => msg_login = Some(Message{ html_color: "red".to_string(), message: fl.1 }),
+					true => msg_login = Some(Message { html_color: "danger".to_string(), message: fl.1 }),
 					false => {
 						match &fl.0 == "error_rej" {
-							true => msg_rej = Some(Message{ html_color: "red".to_string(), message: fl.1 }),
-							false => msg_rej = Some(Message{ html_color: "green".to_string(), message: fl.1 }),
+							true => msg_rej = Some(Message { html_color: "danger".to_string(), message: fl.1 }),
+							false => msg_rej = Some(Message { html_color: "success".to_string(), message: fl.1 }),
 						}
 					}
 				}
 			}
 
-			Template::render("index_niezalogowany", context!(
+			Template::render("index_niezalogowany", context! {
 					title: "MainFrame",
 					msg_rej : msg_rej,
 					msg_login: msg_login
-				))
+				})
 		}
 		Some(user) => {
 			/*
@@ -74,16 +82,12 @@ async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>, flash: Option<Flash
 
 			Template::render("index_zalogowany", context! {
 				title: "MainFrame",
-				username: &user.Username,
+				user: &user,
 				files: user.get_files(&mut *db).await
 			})
 		}
 	}
 }
-
-use rocket::http::ContentType;
-use rocket::request::FlashMessage;
-use rocket_multipart_form_data::{FileField, mime, MultipartFormData, MultipartFormDataError, MultipartFormDataField, MultipartFormDataOptions};
 
 #[post("/plik", data = "<data>")]
 async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>, content_type: &ContentType, data: Data<'_>) -> String {
@@ -183,7 +187,6 @@ async fn index_logout(mut db: Connection<SQL>, jar: &CookieJar<'_>) -> Redirect 
 }
 
 
-
 #[launch]
 fn rocket() -> Rocket<Build> {
 	let figment = rocket::Config::figment().merge(("address", "0.0.0.0"))
@@ -196,12 +199,11 @@ fn rocket() -> Rocket<Build> {
 		}));
 
 	rocket::custom(figment).attach(SQL::init()).mount("/", routes![index, index_post,index_login,index_logout,get_file_by_id,send_file])
-		.attach(Template::fairing())
+		.attach(Template::custom(|eng| {
+			eng.handlebars.register_helper("mod", Box::new(hbs_helpers::modulo));
+		}))
 }
 
-
-use rocket_dyn_templates::{Template, handlebars, context};
-use handlebars::{Handlebars, JsonRender};
 
 async fn page_template<T>(body: T, jar: &CookieJar<'_>, mut db: Connection<SQL>) -> RawHtml<String>
 	where T: std::fmt::Display {

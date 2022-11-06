@@ -1,22 +1,27 @@
 {{#*inline "page"}}
-    <a href="/logout"><h5>{{ username }}</h5></a>
-    <h5>Witaj {{ username }}!</h5>
+    <h4>Witaj <i>{{ user.Username }}</i></h4>
     <form action="/plik" method="POST" enctype="multipart/form-data">
         <input type='file' id='myfile' name='myfile'>
         <input class='btn btn-success' type='submit' value='Wyślij'>
     </form>
+    <br>
     {{#if files}}
-        <br>
         <ul>
             {{#each files}}
                 <h5>
                     <li>
-                        <a target="_blank" href="/get/{{ this.ID }}/{{this.Filename}}"> {{ this.Filename }}</a>
+                        <a class="btn btn-{{#mod @index 2}}info{{else}}secondary{{/mod}}" target="_blank" href="/get/{{ this.ID }}/{{this.Filename}}"> {{ this.Filename }}</a>
                     </li>
                 </h5>
+                {{#unless @last}}
+                    <hr style="height: 1px; background-color: #333333;">
+                {{/unless}}
             {{/each}}
-    </ul>
+        </ul>
+    {{else}}
+        <i>
+            <h6 style="color: white;">Tu będą wyświetlane twoje pliki</h6>
+        </i>
     {{/if}}
-
 {{/inline}}
 {{> layout}}
