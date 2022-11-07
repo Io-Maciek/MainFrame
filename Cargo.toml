@@ -17,7 +17,13 @@ ring = "0.16.20"
 rocket-multipart-form-data = "0.10.3"
 base64 = "0.13.1"
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.87"
 
 [dependencies.rocket_dyn_templates]
 version = "0.1.0-rc.2"
 features = ["handlebars"]
+
+[build]
+# Pi 0/1
+[target.arm-unknown-linux-gnueabihf]
+linker = "arm-linux-gnueabihf-gcc"
