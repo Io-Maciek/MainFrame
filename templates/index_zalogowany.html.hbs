@@ -1,8 +1,26 @@
 {{#*inline "page"}}
+    <style>
+        #myfile ~ #lblMyFile::after {
+            content: "Wyszukaj";
+        }
+
+
+    </style>
     <h4>Witaj <i>{{ user.Username }}</i></h4>
     <form action="/plik" method="POST" enctype="multipart/form-data">
-        <input type='file' id='myfile' name='myfile'>
-        <input class='btn btn-success' type='submit' value='Wyślij'>
+        <div class="row">
+            <div class="col-10">
+                <div class="form-group custom-file mb-2">
+                    <input onchange="inputFileChanged()" type='file' id='myfile' name='myfile'
+                           class="custom-file-input">
+                    <label id="lblMyFile" class="custom-file-label" for="myfile">Wybierz plik</label>
+                </div>
+            </div>
+            <div class="col-2">
+                <button class='btn btn-success mb-2 float-right' type='submit'>Wyślij</button>
+            </div>
+        </div>
+
     </form>
     <br>
     {{#if files}}
@@ -12,7 +30,7 @@
                 {{#each files}}
                     <li>
                         <div class="row justify-content-evenly">
-                            <div class="col-sm-8">
+                            <div class="col-8">
                                 <h5>
                                     <a style="color:black;"
                                        class="badge badge-{{#mod @index 2}}success{{else}}primary{{/mod}}"
@@ -20,10 +38,10 @@
                                        href="/get/{{ this.ID }}/{{this.Filename}}"> {{ this.Filename }}</a>
                                 </h5>
                             </div>
-                            <div class="col-sm-4">
+                            <div class="col-4">
                                 <div class="float-right" style="display: inline;">
-                                    <button class="btn btn-info">Zmień nazwę</button>
-                                    <button class="btn btn-danger">Usuń</button>
+                                    <button onclick="alert('TODO')" class="btn btn-info">Zmień nazwę</button>{{! TODO Zmiana nazwy}}
+                                    <button onclick="alert('TODO')" class="btn btn-danger">Usuń</button>{{! TODO Usuwanie}}
                                 </div>
                             </div>
                         </div>
@@ -46,5 +64,14 @@
             <h6 style="color: white;">Tu będą wyświetlane twoje pliki</h6>
         </i>
     {{/if}}
+    <script>
+            function inputFileChanged(){
+                let filename = document.getElementById("myfile").files[0].name;
+                document.getElementById('lblMyFile').innerHTML = filename;
+            }
+
+
+
+    </script>
 {{/inline}}
 {{> layout}}
