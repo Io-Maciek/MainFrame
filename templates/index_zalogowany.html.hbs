@@ -1,11 +1,5 @@
 {{#*inline "page"}}
-    <style>
-        #myfile ~ #lblMyFile::after {
-            content: "Wyszukaj";
-        }
 
-
-    </style>
     <h4>Witaj <i>{{ user.Username }}</i></h4>
     <form action="/plik" method="POST" enctype="multipart/form-data">
         <div class="row">
@@ -40,8 +34,10 @@
                             </div>
                             <div class="col-4">
                                 <div class="float-right" style="display: inline;">
-                                    <button onclick="alert('TODO')" class="btn btn-info">Zmień nazwę</button>{{! TODO Zmiana nazwy}}
-                                    <button onclick="alert('TODO')" class="btn btn-danger">Usuń</button>{{! TODO Usuwanie}}
+                                    <button onclick="alert('TODO')" class="btn btn-info">Zmień nazwę
+                                    </button>{{! TODO Zmiana nazwy}}
+                                    <button onclick="alert('TODO')" class="btn btn-danger">Usuń
+                                    </button>{{! TODO Usuwanie}}
                                 </div>
                             </div>
                         </div>
@@ -64,14 +60,26 @@
             <h6 style="color: white;">Tu będą wyświetlane twoje pliki</h6>
         </i>
     {{/if}}
-    <script>
+
+
+
+    <section id="addtitionalSection">
+        <style>
+        #myfile ~ #lblMyFile::after {
+            content: "Wyszukaj";
+        }
+
+
+        </style>
+        <script>
             function inputFileChanged(){
                 let filename = document.getElementById("myfile").files[0].name;
                 document.getElementById('lblMyFile').innerHTML = filename;
             }
 
 
+        </script>
+    </section>
 
-    </script>
 {{/inline}}
 {{> layout}}
