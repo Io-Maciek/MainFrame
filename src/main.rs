@@ -21,6 +21,7 @@ use rocket::request::FlashMessage;
 use rocket_multipart_form_data::{FileField, mime, MultipartFormData, MultipartFormDataError, MultipartFormDataField, MultipartFormDataOptions};
 use rocket_dyn_templates::{Template, handlebars, context};
 use handlebars::{Handlebars, JsonRender};
+use rocket_include_static_resources::{static_resources_initializer, static_response_handler};
 use crate::handlebars::HelperDef;
 
 
@@ -198,7 +199,12 @@ fn rocket() -> Rocket<Build> {
 			idle_timeout: None,
 		}));
 
-	rocket::custom(figment).attach(SQL::init()).mount("/", routes![index, index_post,index_login,index_logout,get_file_by_id,send_file])
+	rocket::custom(figment)
+		.attach(SQL::init())
+		.attach(static_resources_initializer!(
+			"favicon" => "img/favicon.png",
+		))
+		.mount("/", routes![favicon, index, index_post,index_login,index_logout,get_file_by_id,send_file])
 		.attach(Template::custom(|eng| {
 			eng.handlebars.register_helper("mod", Box::new(hbs_helpers::modulo));
 		}))
@@ -233,4 +239,8 @@ async fn page_template<T>(body: T, jar: &CookieJar<'_>, mut db: Connection<SQL>)
 			)// : </div>
 		)// : </body>
 	)
+}
+
+static_response_handler! {
+    "/favicon.png" => favicon => "favicon",
 }
