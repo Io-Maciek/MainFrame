@@ -29,16 +29,16 @@
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
     <connection id="8836a11b-9ff8-461d-b4ef-55eaebaebcdd">
-      <console name="Connection" type="STANDARD" schema="main" session="Session 1"><![CDATA[/*CREATE TABLE Files(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+      <console name="Connection" type="STANDARD" schema="main" session="Session 1">/*CREATE TABLE Files(ID INTEGER PRIMARY KEY AUTOINCREMENT,
                     UserID INTEGER NOT NULL,
                     Filename TEXT NOT NULL,
                     Content TEXT NOT NULL,
                     FOREIGN KEY(UserID) REFERENCES Users(ID));*/
---INSERT INTO Files (UserID, "Filename", "Content") values (1,'test.txt','ABCD');              
---SELECT F.*,U."Username" FROM Files AS F JOIN Users AS U ON F."UserID"=U.ID;
---SELECT F.*,U."Username" FROM Files AS F JOIN Users AS U ON F.UserID=U.ID WHERE U.ID=21
+--INSERT INTO Files (UserID, &quot;Filename&quot;, &quot;Content&quot;) values (1,'test.txt','ABCD');              
+--SELECT F.*,U.&quot;Username&quot; FROM Files AS F JOIN Users AS U ON F.&quot;UserID&quot;=U.ID;
+--SELECT F.*,U.&quot;Username&quot; FROM Files AS F JOIN Users AS U ON F.UserID=U.ID WHERE U.ID=21
 SELECT * FROM Files
-UPDATE "Files" SET Content='ahaa']]></console>
+UPDATE &quot;Files&quot; SET Content='ahaa'</console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
@@ -78,9 +78,7 @@ UPDATE "Files" SET Content='ahaa']]></console>
     <diagnostics-history />
   </component>
   <component name="DBNavigator.Project.ScriptExecutionManager" clear-outputs="true">
-    <recently-used-interfaces>
-      <mapping database-type="SQLITE" interface-id="eb4950e9-5d70-4774-8cbe-56cb3dd6c41a" />
-    </recently-used-interfaces>
+    <recently-used-interfaces />
   </component>
   <component name="DBNavigator.Project.Settings">
     <connections>
