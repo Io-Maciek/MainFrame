@@ -20,9 +20,44 @@
                     <a style="color: black;" href="/logout"></a>
                 </li>
             </ul>
-            <form class="form-inline">
-                <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
-            </form>
+            {{!<form action="#" class="form-inline">}}
+                <input onkeyup="navbar_search_changed(this.value)" class="form-inline mr-sm-2" type="search" placeholder="Szukaj" aria-label="Search">
+            {{!</form>}}
         </div>
+        <script>
+            function navbar_search_changed(input){
+                let li_s = document.getElementById("files_list").getElementsByTagName("li");
+                let index = 0;
+                for (let li of li_s){
+                    let a_content = li.children[0].children[0].children[0].children[0];
+                    if(li.children.length>1){
+                        let hr = li.children[1];
+                        li.removeChild(hr);
+                    }
+
+
+                    if(a_content.text.trim().startsWith(input)){
+                        li.style.display = null;
+                        a_content.classList.remove(a_content.classList[1]);
+                        if(index%2==0){
+                            a_content.classList.add("badge-success");
+                        }else{
+                            a_content.classList.add("badge-primary");
+                        }
+                        let new_hr = document.createElement("hr");
+                        new_hr.style.height = "3px"
+                        new_hr.style.background="black";
+                        new_hr.style.border="3px";
+                        new_hr.style.opacity="40%";
+
+                        li.appendChild(new_hr);
+                        index=index+1;
+                    }else{
+                        li.style.display = "none";
+                    }
+                }
+            }
+        </script>
+
     {{/if}}
 </nav>

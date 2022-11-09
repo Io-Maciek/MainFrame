@@ -20,13 +20,13 @@
     {{#if files}}
         <div class="container">
 
-            <ul>
+            <ul id="files_list">
                 {{#each files}}
                     <li>
                         <div class="row justify-content-evenly">
                             <div class="col-8">
                                 <h5>
-                                    <a style="color:black;"
+                                    <a id="li_a" style="color:black;"
                                        class="badge badge-{{#mod @index 2}}success{{else}}primary{{/mod}}"
                                        target="_blank"
                                        href="/get/{{ this.ID }}/{{this.Filename}}"> {{ this.Filename }}</a>
@@ -42,11 +42,7 @@
                             </div>
                         </div>
                         {{#unless @last}}
-                            <div class="row">
-                                <div class="col">
-                                    <hr style="height: 3px; background: black; border: 0px; opacity: 40%;">
-                                </div>
-                            </div>
+                            <hr style="height: 3px; background: black; border: 0px; opacity: 40%;">
                         {{/unless}}
                     </li>
 
