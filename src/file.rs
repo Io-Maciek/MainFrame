@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+use rocket::http::CookieJar;
 use crate::{create, User};
 use crate::sql_traits::{Insertable, Queryable};
 use crate::SQL;
@@ -50,5 +51,21 @@ impl File {
 	pub async fn get_for_user(db: &mut PoolConnection<Sqlite>, user: &User) -> Vec<File> {
 		sqlx::query_as::<_, File>(&format!("SELECT F.* FROM Files AS F JOIN Users AS U ON F.UserID=U.ID WHERE U.ID={}", &user.ID))
 			.fetch_all(db).await.ok().unwrap()
+	}
+
+	pub async fn delete_file_from_user(self,db: &mut PoolConnection<Sqlite>, jar:&CookieJar<'_>)->Result<(),String>{
+		match User::get_from_cookies(db,jar).await{
+			None => Err(String::from("Należy się zalogować")),
+			Some(u) => {
+				if u.ID==self.UserID{
+					match sqlx::query_as::<_,File>(&format!("DELETE FROM Files WHERE ID={} AND UserID={}",self.ID, self.UserID)).fetch_all(db).await {
+						Ok(_) => Ok(()),
+						Err(e) => Err(format!("{:?}",e))
+					}
+				}else{
+					Err(String::from("Nie masz dostępu do tego pliku"))
+				}
+			}
+		}
 	}
 }

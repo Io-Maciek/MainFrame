@@ -36,7 +36,7 @@
                                 <div class="float-right" style="display: inline;">
                                     <button onclick="alert('TODO')" class="btn btn-info">Zmień nazwę
                                     </button>{{! TODO Zmiana nazwy}}
-                                    <button onclick="alert('TODO')" class="btn btn-danger">Usuń
+                                    <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#modelDelete-{{@index}}">Usuń
                                     </button>{{! TODO Usuwanie}}
                                 </div>
                             </div>
@@ -44,7 +44,25 @@
                             <hr style="height: 3px; background: black; border: 0px; opacity: 40%;">
                     </li>
 
-
+                    <div class="modal fade" id="modelDelete-{{@index}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Usunąć plik?</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    Czy na pewno chcesz usunać plik '{{this.Filename}}'?
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Anuluj</button>
+                                    <a href="/delete/{{this.ID}}" class="btn btn-danger">Usuń</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 {{/each}}
             </ul>
         </div>
