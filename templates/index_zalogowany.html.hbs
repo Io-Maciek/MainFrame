@@ -1,4 +1,33 @@
 {{#*inline "page"}}
+    <div class="modal fade" id="modelDelete" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLongTitle">Usunąć plik?</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div id="divModalContent" class="modal-body">
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Anuluj</button>
+                    <a id="aModalHref" href="#" class="btn btn-danger">Usuń</a>
+                </div>
+            </div>
+        </div>
+        <script>
+            function change_delete_info(filename, id)
+            {
+                let a = document.getElementById("aModalHref");
+                a.href = "/delete/"+id;
+                let div = document.getElementById("divModalContent");
+                div.innerHTML = "Czy na pewno usunąć plik '<b><i>"+filename+"</i></b>'?";
+                return false;
+            }
+        </script>
+    </div>
 
     <h4>Witaj <i>{{ user.Username }}</i></h4>
     <form action="/plik" method="POST" enctype="multipart/form-data">
@@ -36,7 +65,8 @@
                                 <div class="float-right" style="display: inline;">
                                     <button onclick="alert('TODO')" class="btn btn-info">Zmień nazwę
                                     </button>{{! TODO Zmiana nazwy}}
-                                    <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#modelDelete-{{@index}}">Usuń
+                                    <button onclick="change_delete_info('{{this.Filename}}', {{this.ID}})" type="button" class="btn btn-warning"
+                                            data-toggle="modal" data-target="#modelDelete">Usuń
                                     </button>{{! TODO Usuwanie}}
                                 </div>
                             </div>
@@ -44,25 +74,7 @@
                             <hr style="height: 3px; background: black; border: 0px; opacity: 40%;">
                     </li>
 
-                    <div class="modal fade" id="modelDelete-{{@index}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered" role="document">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="exampleModalLongTitle">Usunąć plik?</h5>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
-                                </div>
-                                <div class="modal-body">
-                                    Czy na pewno chcesz usunać plik '{{this.Filename}}'?
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Anuluj</button>
-                                    <a href="/delete/{{this.ID}}" class="btn btn-danger">Usuń</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+
                 {{/each}}
             </ul>
         </div>
