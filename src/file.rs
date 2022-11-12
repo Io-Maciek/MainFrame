@@ -38,11 +38,11 @@ impl Insertable for File {
 
 	fn get_update_string(&self) -> String {
 		format!(r"UPDATE Files SET UserID={}, Filename='{}', Content='{}', MimeType={} WHERE ID = {} RETURNING *",
-				&self.UserID, &self.Filename, &self.Content, &self.ID,
+				&self.UserID, &self.Filename, &self.Content,
 				match &self.MimeType {
 					None => "null".to_string(),
 					Some(t) => format!("'{}'", t)
-				}
+				}, &self.ID
 		)
 	}
 }
@@ -64,6 +64,22 @@ impl File {
 					}
 				}else{
 					Err(String::from("Nie masz dostępu do tego pliku"))
+				}
+			}
+		}
+	}
+
+	pub async fn change_filename(&mut self,db: &mut PoolConnection<Sqlite>, jar:&CookieJar<'_>, new_filename:String)->Result<(), &'static str>{
+		match User::get_from_cookies(db, jar).await{
+			None => Err("Należy się zalogować"),
+			Some(user) => {
+				match user.ID==self.UserID{
+					true => {
+						self.Filename=new_filename;
+						&self.update(db).await;
+						Ok(())
+					}
+					false => Err("Nie masz dostępu do tego pliku")
 				}
 			}
 		}

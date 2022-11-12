@@ -3,13 +3,13 @@
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLongTitle">Usunąć plik?</h5>
+                    <h5 class="modal-title" id="modalTitle">placeholder</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div id="divModalContent" class="modal-body">
-
+                    placeholder2
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Anuluj</button>
@@ -20,11 +20,33 @@
         <script>
             function change_delete_info(filename, id)
             {
+                document.getElementById("modalTitle").innerHTML="Usunąć plik?";
+                document.getElementById("divModalContent").innerHTML = "Czy na pewno usunąć plik '<b><i>"+filename+"</i></b>'?";
                 let a = document.getElementById("aModalHref");
-                a.href = "/delete/"+id;
-                let div = document.getElementById("divModalContent");
-                div.innerHTML = "Czy na pewno usunąć plik '<b><i>"+filename+"</i></b>'?";
+                a.href="/delete/"+id;
+                a.classList.remove(a.classList[1]);
+                a.classList.add("btn-danger")
+                a.innerHTML="Usuń";
                 return false;
+            }
+            function change_filename_info(filename, id)
+            {
+                document.getElementById("modalTitle").innerHTML="Zmień nazwę pliku";
+                document.getElementById("divModalContent").innerHTML = `
+                <div class="form-group">
+                    <label for="recipient-name" class="col-form-label">Nowa nazwa '<b><i>`+filename+`</i></b>':</label>
+                    <input onkeyup='change_aHref_to_filename(this.value, `+id+`)' type="text" class="form-control" id="recipient-name" value='`+filename+`''>
+                </div>`;
+                let a = document.getElementById("aModalHref");
+                a.href="/change_filename/"+filename+"/"+id;
+                a.classList.remove(a.classList[1]);
+                a.classList.add("btn-success");
+                a.innerHTML="Potwierdź";
+                return false;
+            }
+            function change_aHref_to_filename(new_filename, id)
+            {
+                document.getElementById("aModalHref").href = "/change_filename/"+new_filename+"/"+id;
             }
         </script>
     </div>
@@ -63,11 +85,12 @@
                             </div>
                             <div class="col-4">
                                 <div class="float-right" style="display: inline;">
-                                    <button onclick="alert('TODO')" class="btn btn-info">Zmień nazwę
-                                    </button>{{! TODO Zmiana nazwy}}
+                                    <button onclick="change_filename_info('{{this.Filename}}', {{this.ID}})" type="button" class="btn btn-info"
+                                    data-toggle="modal" data-target="#modelDelete">Zmień nazwę
+                                    </button>
                                     <button onclick="change_delete_info('{{this.Filename}}', {{this.ID}})" type="button" class="btn btn-warning"
                                             data-toggle="modal" data-target="#modelDelete">Usuń
-                                    </button>{{! TODO Usuwanie}}
+                                    </button>
                                 </div>
                             </div>
                         </div>

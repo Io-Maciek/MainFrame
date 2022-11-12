@@ -144,6 +144,19 @@ async fn delete_file(jar: & CookieJar<'_>, mut db: Connection<SQL>, file_id: i32
 	}
 }
 
+#[get("/change_filename/<new_filename>/<file_id>")]
+async fn change_filename(jar: & CookieJar<'_>, mut db: Connection<SQL>,new_filename: String, file_id: i32)->Result<Redirect, &'static str>{
+	match File::get_one(&mut *db, file_id).await {
+		None => Err("Plik nie istnieje"),
+		Some(mut file) => {
+			match file.change_filename(&mut *db, jar, new_filename).await{
+				Ok(_)=>Ok(Redirect::to(uri!(index))),
+				Err(mess)=>Err(mess)
+			}
+		}
+	}
+}
+
 #[get("/get/<file_id>/<file_name>")]
 async fn get_file_by_id<'a>(jar: &'a CookieJar<'_>, mut db: Connection<SQL>, file_id: i32, file_name: String) -> Result<RawHtml<String>, &'a str> { //Result<Vec<u8>, &'a str> {
 	//TODO przedstawić to troche lepiej
@@ -217,7 +230,7 @@ fn rocket() -> Rocket<Build> {
 		.attach(static_resources_initializer!(
 			"favicon" => "img/favicon.png",
 		))
-		.mount("/", routes![favicon, index, index_post,index_login,index_logout,get_file_by_id,send_file,delete_file])
+		.mount("/", routes![favicon, index, index_post,index_login,index_logout,get_file_by_id,send_file,delete_file,change_filename])
 		.attach(Template::custom(|eng| {
 			eng.handlebars.register_helper("mod", Box::new(hbs_helpers::modulo));
 		}))
