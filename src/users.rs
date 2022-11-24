@@ -1,5 +1,5 @@
 use std::fmt::{Display, Formatter, write};
-use crate::{create, File};
+use crate::{File, sql_struct};
 use crate::sql_traits::{Insertable, Queryable};
 use crate::SQL;
 use rocket_db_pools::Connection;
@@ -12,9 +12,12 @@ use rocket::http::{Cookie, CookieJar};
 use crate::user_maker::UserMaker;
 use sqlx::pool::PoolConnection;
 use sqlx::{Error, Sqlite};
+use rocket::serde::Serialize;
 
-create!(
-	#[Table("Users")]
+
+sql_struct!(
+	Table("Users")
+	ID("ID")
 	pub struct User<Sqlite>{
 		i32,
 		pub Username:String,
@@ -36,7 +39,7 @@ impl Insertable for User {
 			Some(sess) => format!("'{}'", sess)
 		};
 		format!(r"UPDATE Users SET Username='{}', Hash='{}', Salt='{}', SessionID={} WHERE ID = {} RETURNING *",
-				&self.Username, &self.Hash, &self.Salt, sess_id, &self.ID)
+				&self.Username, &self.Hash, &self.Salt, sess_id, &self.id)
 	}
 }
 
@@ -52,7 +55,7 @@ impl User {
 	}
 
 	pub async fn get_file(&self, file_id : i32,db: &mut PoolConnection<Sqlite>)->Option<File>{
-		sqlx::query_as::<_, File>(&format!("SELECT F.* FROM Files AS F JOIN Users AS U ON F.UserID=U.ID WHERE U.ID={} AND F.ID={}",&self.ID,file_id))
+		sqlx::query_as::<_, File>(&format!("SELECT F.* FROM Files AS F JOIN Users AS U ON F.UserID=U.ID WHERE U.ID={} AND F.ID={}",&self.id,file_id))
 			.fetch_one(db).await.ok()
 	}
 
@@ -66,16 +69,6 @@ impl User {
 		self.update(db).await;
 
 		jar.add(Cookie::build("session_id", encoded_session).http_only(true).finish());
-	}
-
-	pub fn new(username: String, hash: String, salt: String) -> User {
-		User {
-			ID: -1,
-			Username: username,
-			Salt: salt,
-			Hash: hash,
-			SessionID: None,
-		}
 	}
 
 	pub async fn get_from_cookies(db: &mut PoolConnection<Sqlite>, jar: &CookieJar<'_>) -> Option<User> {

@@ -9,8 +9,8 @@ pub trait Insertable{
 
 #[async_trait]
 pub trait Queryable<T: Insertable, I, DB: sqlx::Database>{
-	async fn get_one(db: &mut PoolConnection<DB>,id: I)->Option<T>;
-	async fn get_all(db: &mut PoolConnection<DB>)->Vec<T>;
-	async fn insert(self,db: &mut PoolConnection<DB>)->T;
-	async fn update(&self,db: &mut PoolConnection<DB>);
+	async fn get_one(db: &mut PoolConnection<DB>,id: I)->Result<T, sqlx::Error>;
+	async fn get_all(db: &mut PoolConnection<DB>)->Result<Vec<T>,sqlx::Error>;
+	async fn insert(self,db: &mut PoolConnection<DB>)->Result<T,sqlx::Error>;
+	async fn update(&self,db: &mut PoolConnection<DB>)->Result<(), sqlx::Error>;
 }

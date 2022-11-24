@@ -80,15 +80,15 @@
                                     <a id="li_a" style="color:black;"
                                        class="badge badge-{{#mod @index 2}}success{{else}}primary{{/mod}}"
                                        target="_blank"
-                                       href="/get/{{ this.ID }}/{{this.Filename}}"> {{ this.Filename }}</a>
+                                       href="/get/{{ this.id }}/{{this.Filename}}"> {{ this.Filename }}</a>
                                 </h5>
                             </div>
                             <div class="col-4">
                                 <div class="float-right" style="display: inline;">
-                                    <button onclick="change_filename_info('{{this.Filename}}', {{this.ID}})" type="button" class="btn btn-info"
+                                    <button onclick="change_filename_info('{{this.Filename}}', {{this.id}})" type="button" class="btn btn-info"
                                     data-toggle="modal" data-target="#modelDelete">Zmień nazwę
                                     </button>
-                                    <button onclick="change_delete_info('{{this.Filename}}', {{this.ID}})" type="button" class="btn btn-warning"
+                                    <button onclick="change_delete_info('{{this.Filename}}', {{this.id}})" type="button" class="btn btn-warning"
                                             data-toggle="modal" data-target="#modelDelete">Usuń
                                     </button>
                                 </div>

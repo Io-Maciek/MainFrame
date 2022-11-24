@@ -1,20 +1,22 @@
 use std::fmt::{Display, Formatter};
 use rocket::http::CookieJar;
-use crate::{create, User};
+use crate::{sql_struct, User};
 use crate::sql_traits::{Insertable, Queryable};
 use crate::SQL;
 use rocket_db_pools::Connection;
 use sqlx::{Error, Sqlite};
 use sqlx::pool::PoolConnection;
+use rocket::serde::Serialize;
 
-create!(
-	#[Table("Files")]
+sql_struct!(
+	Table("Files")
+	ID("ID")
 	pub struct File<Sqlite>{
 		i32,
 		pub UserID:i32,
 		pub Filename:String,
 		pub Content:String,
-		pub MimeType:Option<String>
+		pub MimeType:Option<String>,
 	}
 );
 
@@ -42,14 +44,14 @@ impl Insertable for File {
 				match &self.MimeType {
 					None => "null".to_string(),
 					Some(t) => format!("'{}'", t)
-				}, &self.ID
+				}, &self.id
 		)
 	}
 }
 
 impl File {
 	pub async fn get_for_user(db: &mut PoolConnection<Sqlite>, user: &User) -> Vec<File> {
-		sqlx::query_as::<_, File>(&format!("SELECT F.* FROM Files AS F JOIN Users AS U ON F.UserID=U.ID WHERE U.ID={}", &user.ID))
+		sqlx::query_as::<_, File>(&format!("SELECT F.* FROM Files AS F JOIN Users AS U ON F.UserID=U.ID WHERE U.ID={}", &user.id))
 			.fetch_all(db).await.ok().unwrap()
 	}
 
@@ -57,8 +59,8 @@ impl File {
 		match User::get_from_cookies(db,jar).await{
 			None => Err(String::from("Należy się zalogować")),
 			Some(u) => {
-				if u.ID==self.UserID{
-					match sqlx::query_as::<_,File>(&format!("DELETE FROM Files WHERE ID={} AND UserID={}",self.ID, self.UserID)).fetch_all(db).await {
+				if u.id==self.UserID{
+					match sqlx::query_as::<_,File>(&format!("DELETE FROM Files WHERE ID={} AND UserID={}",self.id, self.UserID)).fetch_all(db).await {
 						Ok(_) => Ok(()),
 						Err(e) => Err(format!("{:?}",e))
 					}
@@ -73,7 +75,7 @@ impl File {
 		match User::get_from_cookies(db, jar).await{
 			None => Err("Należy się zalogować"),
 			Some(user) => {
-				match user.ID==self.UserID{
+				match user.id==self.UserID{
 					true => {
 						self.Filename=new_filename;
 						&self.update(db).await;

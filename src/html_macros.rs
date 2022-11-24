@@ -50,68 +50,78 @@ macro_rules! tag {
 }
 
 #[macro_export]
-macro_rules! create {
+macro_rules! sql_struct {
 	(
-		#[Table($table:literal)]
+		$(#[$main_attr:meta] )*
+		Table($table:literal)
+		ID($id_name:literal)
 		$visibility:vis struct $struct:ident <$sql:ty>
 		{
 			$id: ty,
-			$($element_visibility:vis $element:ident: $type:ty),*
+			$(
+				$(#[$field_attr:meta] )*
+				$element_visibility:vis $element:ident: $type:ty
+			),* $(,)?
 		}
 	)=>
 	{
-		use rocket::serde::Serialize;
 
 
-
+		$(#[$main_attr] )*
 		#[derive(Debug)]
 		#[derive(Serialize)]
 		#[allow(dead_code)]
 		#[derive(sqlx::FromRow)]
 		$visibility struct $struct{
-			pub ID:$id,
+			#[sqlx(rename=$id_name)]
+			pub id:$id,
 			$(
+				$(#[$field_attr] )*
 				$element_visibility $element: $type,
 			)*
 		}
 
 		#[allow(dead_code)]
 		impl $struct{
-/*			pub fn new($($element: $type),*)->$struct{
+			pub fn new($($element: $type),*)->$struct{
 				$struct{
-					ID: Default::default(),
+					id: Default::default(),
 					$(
 						$element
 					),*
 				}
-			}*/
+			}
 
 			pub fn get_table(&self)->String{String::from($table)}
+			pub fn get_id_name(&self)->String{String::from($id_name)}
 		}
 
 
 		#[async_trait]
 		impl Queryable<$struct, $id, $sql> for $struct{
-			async fn get_one(db: &mut PoolConnection<$sql>,id: $id)->Option<$struct>{
-				let q = format!("SELECT * FROM {} WHERE ID = {}",$table,id);
+			async fn get_one(db: &mut PoolConnection<$sql>,id: $id)->Result<$struct, sqlx::Error>{
+				let q = format!("SELECT * FROM {} WHERE {} = {}",$table,$id_name,id);
                 sqlx::query_as::<_, $struct>(q.as_str())
-                	.fetch_one(&mut *db).await.ok()
+                	.fetch_one(&mut *db).await
 			}
 
-			async fn get_all(db: &mut PoolConnection<$sql>)->Vec<$struct>{
+			async fn get_all(db: &mut PoolConnection<$sql>)->Result<Vec<$struct>,sqlx::Error>{
 				let q = format!("SELECT * FROM {}",$table);
                 sqlx::query_as::<_, $struct>(q.as_str())
-                	.fetch_all(db).await.ok().unwrap()
+                	.fetch_all(db).await
 			}
 
-			async fn insert(self,db: &mut PoolConnection<$sql>)->$struct{
+			async fn insert(self,db: &mut PoolConnection<$sql>)->Result<$struct,sqlx::Error>{
 					let q = self.get_insert_string();
-					sqlx::query_as::<_,$struct>(q.as_str()).fetch_one(db).await.ok().unwrap()
+					sqlx::query_as::<_,$struct>(q.as_str()).fetch_one(db).await
 			}
 
-			async fn update(&self,db: &mut PoolConnection<$sql>){
+			async fn update(&self,db: &mut PoolConnection<$sql>)->Result<(), sqlx::Error>{
 				let q = self.get_update_string();
-				sqlx::query_as::<_,$struct>(q.as_str()).fetch_one(db).await;
+				match sqlx::query_as::<_,$struct>(q.as_str()).fetch_one(db).await{
+					Ok(_)=>Ok(()),
+					Err(err)=>Err(err),
+				}
 			}
 		}
 	}

@@ -47,7 +47,7 @@ impl UserMaker<'_>{
 			&mut pbkdf2_hash,
 		);
 
-		Ok(User::new(self.uname.to_owned(),HEXUPPER.encode(&pbkdf2_hash),HEXUPPER.encode(&s)))
+		Ok(User::new(self.uname.to_owned(),HEXUPPER.encode(&pbkdf2_hash),HEXUPPER.encode(&s),None))
 	}
 
 	pub async fn check_user_login(self,db : &mut PoolConnection<Sqlite>)->Result<User, String>{

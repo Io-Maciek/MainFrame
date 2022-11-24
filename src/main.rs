@@ -111,13 +111,9 @@ async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>, content_type: &
 						Some(files) => {
 							let file = &files[0];
 							let pdf = HEXUPPER.encode(&std::fs::read(&file.path).unwrap());
-							File {
-								ID: 0,
-								UserID: user.ID,
-								Filename: file.file_name.as_ref().unwrap().clone(),
-								Content: pdf,
-								MimeType: file.content_type.as_ref().map(|x| x.to_string()),
-							}.insert(&mut *db).await;
+							File::new(user.id,file.file_name.as_ref().unwrap().clone(),
+									  pdf,file.content_type.as_ref().map(|x| x.to_string()))
+							.insert(&mut *db).await;
 
 							format!("Udało się!")
 						}
@@ -134,8 +130,8 @@ async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>, content_type: &
 #[get("/delete/<file_id>")]
 async fn delete_file(jar: & CookieJar<'_>, mut db: Connection<SQL>, file_id: i32)->Result<Redirect, String>{
 	match File::get_one(&mut *db, file_id).await {
-		None => Err(String::from("Plik nie istnieje")),
-		Some(file) => {
+		Err(_) => Err(String::from("Plik nie istnieje")),
+		Ok(file) => {
 			match file.delete_file_from_user(&mut *db, jar).await{
 				Ok(_)=>Ok(Redirect::to(uri!(index))),
 				Err(mess)=>Err(mess)
@@ -147,8 +143,8 @@ async fn delete_file(jar: & CookieJar<'_>, mut db: Connection<SQL>, file_id: i32
 #[get("/change_filename/<new_filename>/<file_id>")]
 async fn change_filename(jar: & CookieJar<'_>, mut db: Connection<SQL>,new_filename: String, file_id: i32)->Result<Redirect, &'static str>{
 	match File::get_one(&mut *db, file_id).await {
-		None => Err("Plik nie istnieje"),
-		Some(mut file) => {
+		Err(_) => Err("Plik nie istnieje"),
+		Ok(mut file) => {
 			match file.change_filename(&mut *db, jar, new_filename).await{
 				Ok(_)=>Ok(Redirect::to(uri!(index))),
 				Err(mess)=>Err(mess)
@@ -189,7 +185,7 @@ async fn get_file_by_id<'a>(jar: &'a CookieJar<'_>, mut db: Connection<SQL>, fil
 async fn index_post(jar: &CookieJar<'_>, mut db: Connection<SQL>, maker_user: Form<UserMaker<'_>>) -> Flash<Redirect> {
 	match maker_user.into_inner().create_user() {
 		Ok(user) => {
-			let user = user.insert(&mut *db).await;
+			let user = user.insert(&mut *db).await.unwrap();
 			Flash::success(Redirect::to(uri!(index)), format!(" Pomyślnie utworzono użytkownika \"{}\"", user.Username))
 		}
 		Err(err) => Flash::new(Redirect::to(uri!(index)), "error_rej", err)
