@@ -10,7 +10,7 @@ use rocket::response::{Flash, Redirect, Responder};
 use crate::sql_connectivity::SQL;
 use rocket_db_pools::{Connection, Database};
 use sqlx::pool::PoolConnection;
-use sqlx::Sqlite;
+use sqlx::{pool, Sqlite, SqlitePool};
 use crate::file::File;
 use crate::sql_traits::Queryable;
 use crate::user_maker::UserMaker;
@@ -98,7 +98,7 @@ async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>, content_type: &
 			String::from("Trzeba być zalogowanym!")
 		}
 		Some(user) => {
-			let mut options = MultipartFormDataOptions::with_multipart_form_data_fields(
+			let options = MultipartFormDataOptions::with_multipart_form_data_fields(
 				vec![
 					MultipartFormDataField::file("myfile").size_limit(10_000_000).content_type_by_string(Some(mime::STAR_STAR)).unwrap(),//10MB
 				]
@@ -232,7 +232,7 @@ fn rocket() -> Rocket<Build> {
 		}))
 }
 
-
+#[allow(dead_code)]
 async fn page_template<T>(body: T, jar: &CookieJar<'_>, mut db: Connection<SQL>) -> RawHtml<String>
 	where T: std::fmt::Display {
 	let add = match User::get_from_cookies(&mut *db, jar).await {

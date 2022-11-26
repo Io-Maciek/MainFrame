@@ -1,12 +1,14 @@
+use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use rocket::http::CookieJar;
 use crate::{sql_struct, User};
 use crate::sql_traits::{Insertable, Queryable};
 use crate::SQL;
 use rocket_db_pools::Connection;
-use sqlx::{Error, Sqlite};
+use sqlx::{Error, Mssql, Sqlite};
 use sqlx::pool::PoolConnection;
 use rocket::serde::Serialize;
+use serde_json::error::Category::Data;
 
 sql_struct!(
 	Table("Files")
@@ -28,24 +30,32 @@ impl Display for File
 }
 
 impl Insertable for File {
-	fn get_insert_string(&self) -> String {
-		format!(r"INSERT INTO Files (UserID, Filename, Content, MimeType) VALUES ({},'{}','{}', {}) RETURNING *",
-				&self.UserID, &self.Filename, &self.Content,
-				match &self.MimeType {
-					None => "null".to_string(),
-					Some(t) => format!("'{}'", t)
+	fn sql_types_string(&self, fields: Vec<String>) -> HashMap<String, String> {
+		let mut map = HashMap::new();
+
+		for field in fields {
+			let wynik = if field.eq("UserID"){
+				format!("'{}'",self.UserID)
+			}else if field.eq("Filename"){
+				format!("'{}'",self.Filename)
+			}
+			else if field.eq("Content"){
+				format!("'{}'",self.Content)
+			}else if field.eq("MimeType"){
+				match self.MimeType.as_ref() {
+					None => "NULL".to_string(),
+					Some(mime) => format!("'{}'", mime)
 				}
-		)
+			}else {
+				"".to_string()
+			};
+			map.insert(field, wynik);
+		}
+		map
 	}
 
-	fn get_update_string(&self) -> String {
-		format!(r"UPDATE Files SET UserID={}, Filename='{}', Content='{}', MimeType={} WHERE ID = {} RETURNING *",
-				&self.UserID, &self.Filename, &self.Content,
-				match &self.MimeType {
-					None => "null".to_string(),
-					Some(t) => format!("'{}'", t)
-				}, &self.id
-		)
+	fn sql_type_id(&self) -> String {
+		self.id.to_string()
 	}
 }
 

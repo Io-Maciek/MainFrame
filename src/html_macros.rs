@@ -97,8 +97,58 @@ macro_rules! sql_struct {
 		}
 
 
+
+
+
 		#[async_trait]
 		impl Queryable<$struct, $id, $sql> for $struct{
+			fn get_insert_string(&self)->Result<String, String>{
+				let mut args = String::new();
+
+				let field_map = self.sql_types_string(self.get_fields());
+				let f = self.get_fields();
+				for i in f.iter().enumerate(){
+					args+=field_map.get(i.1).unwrap();
+					if i.0<f.len()-1{
+						args+=", ";
+					}
+				}
+
+				let sql_str = stringify!($sql);
+				if sql_str.eq("Sqlite"){
+					Ok(format!(r"INSERT INTO {} ({}) VALUES ({}) RETURNING *",$table,self.get_fields().connect(", "),
+					args)
+				)
+				}else if sql_str.eq("Mssql"){
+					Ok(format!("INSERT INTO {} OUTPUT inserted.* VALUES ({})",$table, args))
+				}else{
+					Err(format!("Database pool '{}' is not yet implemented", sql_str))
+				}
+			}
+
+			fn get_update_string(&self)->Result<String, String>{
+				let mut args = Vec::new();
+
+				let field_map = self.sql_types_string(self.get_fields());
+				for field in &self.get_fields(){
+					args.push(format!("{}={}",&field, field_map.get(field).unwrap()));
+				}
+
+				let sql_str = stringify!($sql);
+				if sql_str.eq("Sqlite"){
+					Ok(format!("UPDATE {} SET {} WHERE {} = {} RETURNING *",$table,args.connect(", "), $id_name,
+						&self.sql_type_id()))
+
+				}else if sql_str.eq("Mssql"){
+					Ok(format!("UPDATE {} SET {} OUTPUT inserted.* WHERE {}={}",$table,args.connect(", "), $id_name,&self.sql_type_id() ))
+				}else{
+					Err(format!("Database pool '{}' is not yet implemented", sql_str))
+				}
+			}
+
+
+			fn get_fields(&self)->Vec<String>{ vec![$(stringify!($element).to_string()),*] }
+
 			async fn get_one(db: &mut PoolConnection<$sql>,id: $id)->Result<$struct, sqlx::Error>{
 				let q = format!("SELECT * FROM {} WHERE {} = {}",$table,$id_name,id);
                 sqlx::query_as::<_, $struct>(q.as_str())
@@ -112,12 +162,12 @@ macro_rules! sql_struct {
 			}
 
 			async fn insert(self,db: &mut PoolConnection<$sql>)->Result<$struct,sqlx::Error>{
-					let q = self.get_insert_string();
+					let q = self.get_insert_string().unwrap();
 					sqlx::query_as::<_,$struct>(q.as_str()).fetch_one(db).await
 			}
 
 			async fn update(&self,db: &mut PoolConnection<$sql>)->Result<(), sqlx::Error>{
-				let q = self.get_update_string();
+				let q = self.get_update_string().unwrap();
 				match sqlx::query_as::<_,$struct>(q.as_str()).fetch_one(db).await{
 					Ok(_)=>Ok(()),
 					Err(err)=>Err(err),

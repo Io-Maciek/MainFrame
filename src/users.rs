@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::{Display, Formatter, write};
 use crate::{File, sql_struct};
 use crate::sql_traits::{Insertable, Queryable};
@@ -14,7 +15,6 @@ use sqlx::pool::PoolConnection;
 use sqlx::{Error, Sqlite};
 use rocket::serde::Serialize;
 
-
 sql_struct!(
 	Table("Users")
 	ID("ID")
@@ -28,18 +28,33 @@ sql_struct!(
 );
 
 impl Insertable for User {
-	fn get_insert_string(&self) -> String {
-		format!(r"INSERT INTO Users (Username, Hash, Salt) VALUES ('{}','{}','{}') RETURNING *",
-				&self.Username, &self.Hash, &self.Salt)
+
+	fn sql_types_string(&self, fields: Vec<String>) -> HashMap<String, String> {
+		let mut map = HashMap::new();
+
+		for field in fields {
+				let wynik = if field.eq("Username"){
+					format!("'{}'",self.Username)
+				}else if field.eq("Hash"){
+					format!("'{}'",self.Hash)
+				}
+				else if field.eq("Salt"){
+					format!("'{}'",self.Salt)
+				}else if field.eq("SessionID"){
+					match self.SessionID.as_ref() {
+						None => "NULL".to_string(),
+						Some(sess) => format!("'{}'", sess)
+					}
+				}else {
+					"".to_string()
+				};
+			map.insert(field,wynik);
+		}
+		map
 	}
 
-	fn get_update_string(&self) -> String {
-		let sess_id = match &self.SessionID {
-			None => "null".to_string(),
-			Some(sess) => format!("'{}'", sess)
-		};
-		format!(r"UPDATE Users SET Username='{}', Hash='{}', Salt='{}', SessionID={} WHERE ID = {} RETURNING *",
-				&self.Username, &self.Hash, &self.Salt, sess_id, &self.id)
+	fn sql_type_id(&self) -> String {
+		self.id.to_string()
 	}
 }
 
