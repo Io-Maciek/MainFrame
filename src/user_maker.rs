@@ -6,7 +6,7 @@ use ring::{digest, pbkdf2, rand};
 use ring::error::Unspecified;
 use rocket::form::Form;
 use rocket_db_pools::Connection;
-use sqlx::Sqlite;
+use sqlx::{Sqlite, Mssql};
 use crate::{PoolConnection, SQL};
 
 #[derive(FromForm, Clone, Debug)]
@@ -50,7 +50,7 @@ impl UserMaker<'_>{
 		Ok(User::new(self.uname.to_owned(),HEXUPPER.encode(&pbkdf2_hash),HEXUPPER.encode(&s),None))
 	}
 
-	pub async fn check_user_login(self,db : &mut PoolConnection<Sqlite>)->Result<User, String>{
+	pub async fn check_user_login(self,db : &mut PoolConnection<Mssql>)->Result<User, String>{
 		let user_check = sqlx::query_as::<_, User>(&format!("SELECT * FROM Users WHERE Username='{}'",&self.uname))
 			.fetch_one(db).await.ok();
 		match user_check{

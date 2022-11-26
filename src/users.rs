@@ -12,13 +12,13 @@ use ring::rand::SecureRandom;
 use rocket::http::{Cookie, CookieJar};
 use crate::user_maker::UserMaker;
 use sqlx::pool::PoolConnection;
-use sqlx::{Error, Sqlite};
+use sqlx::{Error, Mssql, Sqlite};
 use rocket::serde::Serialize;
-
+//pub struct User<Sqlite>{
 sql_struct!(
 	Table("Users")
 	ID("ID")
-	pub struct User<Sqlite>{
+	pub struct User<Mssql>{
 		i32,
 		pub Username:String,
 		pub Hash:String,
@@ -65,16 +65,16 @@ impl Display for User {
 }
 
 impl User {
-	pub async fn get_files(&self, db: &mut PoolConnection<Sqlite>) -> Vec<File> {
+	pub async fn get_files(&self, db: &mut PoolConnection<Mssql>) -> Vec<File> {
 		File::get_for_user(db, &self).await
 	}
 
-	pub async fn get_file(&self, file_id : i32,db: &mut PoolConnection<Sqlite>)->Option<File>{
+	pub async fn get_file(&self, file_id : i32,db: &mut PoolConnection<Mssql>)->Option<File>{
 		sqlx::query_as::<_, File>(&format!("SELECT F.* FROM Files AS F JOIN Users AS U ON F.UserID=U.ID WHERE U.ID={} AND F.ID={}",&self.id,file_id))
 			.fetch_one(db).await.ok()
 	}
 
-	pub async fn create_new_session(&mut self, db: &mut PoolConnection<Sqlite>, jar: &CookieJar<'_>) {
+	pub async fn create_new_session(&mut self, db: &mut PoolConnection<Mssql>, jar: &CookieJar<'_>) {
 		let rng = ring::rand::SystemRandom::new();
 		let mut s = [0u8; 127];
 		rng.fill(&mut s).unwrap();
@@ -86,7 +86,7 @@ impl User {
 		jar.add(Cookie::build("session_id", encoded_session).http_only(true).finish());
 	}
 
-	pub async fn get_from_cookies(db: &mut PoolConnection<Sqlite>, jar: &CookieJar<'_>) -> Option<User> {
+	pub async fn get_from_cookies(db: &mut PoolConnection<Mssql>, jar: &CookieJar<'_>) -> Option<User> {
 		match jar.get("session_id") {
 			None => None,
 			Some(session_id) => {
