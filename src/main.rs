@@ -111,9 +111,12 @@ async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>, content_type: &
 						Some(files) => {
 							let file = &files[0];
 							let pdf = HEXUPPER.encode(&std::fs::read(&file.path).unwrap());
-							File::new(user.id,file.file_name.as_ref().unwrap().clone(),
+							println!("\nCONTENT: {:?}\n",&pdf);
+							let i = File::new(user.id,file.file_name.as_ref().unwrap().clone(),
 									  pdf,file.content_type.as_ref().map(|x| x.to_string()))
 							.insert(&mut *db).await;
+
+							println!("{:?}",&i);
 
 							format!("Udało się!")
 						}
@@ -196,6 +199,7 @@ async fn index_post(jar: &CookieJar<'_>, mut db: Connection<SQL>, maker_user: Fo
 async fn index_login(mut db: Connection<SQL>, jar: &CookieJar<'_>, maker_user: Form<UserMaker<'_>>) -> Result<Redirect, Flash<Redirect>> {
 	match maker_user.into_inner().check_user_login(&mut *db).await {
 		Ok(mut user) => {
+			println!("{:?}",&user);
 			user.create_new_session(&mut *db, jar).await;
 			Ok(Redirect::to(uri!(index)))
 		}

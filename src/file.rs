@@ -49,8 +49,13 @@ impl Insertable<Fields> for File {
 
 impl File {
 	pub async fn get_for_user(db: &mut PoolConnection<Mssql>, user: &User) -> Vec<File> {
-		sqlx::query_as::<_, File>(&format!("SELECT F.* FROM Files AS F JOIN Users AS U ON F.UserID=U.ID WHERE U.ID={}", &user.id))
-			.fetch_all(db).await.ok().unwrap()
+		let x =sqlx::query_as::<_, File>(&format!("SELECT F.* FROM Files AS F JOIN Users AS U ON F.UserID=U.ID WHERE U.ID={}", &user.id))
+			.fetch_all(db).await.ok();
+		println!("\n\nPLIKI : {:?}\n",&x);
+		match x{
+			None => Vec::new(),
+			Some(fs) => fs
+		}
 	}
 
 	pub async fn delete_file_from_user(self,db: &mut PoolConnection<Mssql>, jar:&CookieJar<'_>)->Result<(),String>{
