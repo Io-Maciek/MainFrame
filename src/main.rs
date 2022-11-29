@@ -214,8 +214,8 @@ use std::ops::Deref;
 fn rocket() -> Rocket<Build> {
 	let figment = rocket::Config::figment().merge(("address", "0.0.0.0"))
 		.merge(("databases.MainFrame", rocket_db_pools::Config {
-			url: "MainFrame.db".into(),
-			//url: "mssql://[USER]:[PWD]@localhost:1433/MainFrame".into(),
+			//url: "MainFrame.db".into(),
+			url: "mssql://[USER]:[PWD]@localhost:1433/MainFrame".into(),
 			min_connections: None,
 			max_connections: 1024,
 			connect_timeout: 5,
