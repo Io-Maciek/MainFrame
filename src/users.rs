@@ -12,9 +12,9 @@ use ring::rand::SecureRandom;
 use rocket::http::{Cookie, CookieJar};
 use crate::user_maker::UserMaker;
 use sqlx::pool::PoolConnection;
-use sqlx::{Error, Sqlite};
+use sqlx::{Error, Mssql, Sqlite};
 use rocket::serde::Serialize;
-
+//pub struct User<Sqlite>{
 sql_struct!(
 	Table("Users")
 	ID("ID")
@@ -27,34 +27,20 @@ sql_struct!(
 	}
 );
 
-impl Insertable for User {
-
-	fn sql_types_string(&self, fields: Vec<String>) -> HashMap<String, String> {
-		let mut map = HashMap::new();
-
-		for field in fields {
-				let wynik = if field.eq("Username"){
-					format!("'{}'",self.Username)
-				}else if field.eq("Hash"){
-					format!("'{}'",self.Hash)
+impl Insertable<Fields> for User{
+	fn sql_types_string(&self, field: Fields) -> String {
+		match field{
+			Fields::id => self.id.to_string(),
+			Fields::Username => format!("'{}'",self.Username),
+			Fields::Hash => format!("'{}'",self.Hash),
+			Fields::Salt => format!("'{}'",self.Salt),
+			Fields::SessionID => {
+				match self.SessionID.as_ref() {
+					None => "NULL".to_string(),
+					Some(sess) => format!("'{}'", sess)
 				}
-				else if field.eq("Salt"){
-					format!("'{}'",self.Salt)
-				}else if field.eq("SessionID"){
-					match self.SessionID.as_ref() {
-						None => "NULL".to_string(),
-						Some(sess) => format!("'{}'", sess)
-					}
-				}else {
-					"".to_string()
-				};
-			map.insert(field,wynik);
+			}
 		}
-		map
-	}
-
-	fn sql_type_id(&self) -> String {
-		self.id.to_string()
 	}
 }
 

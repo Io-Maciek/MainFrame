@@ -6,7 +6,7 @@ use ring::{digest, pbkdf2, rand};
 use ring::error::Unspecified;
 use rocket::form::Form;
 use rocket_db_pools::Connection;
-use sqlx::Sqlite;
+use sqlx::{Sqlite, Mssql};
 use crate::{PoolConnection, SQL};
 
 #[derive(FromForm, Clone, Debug)]

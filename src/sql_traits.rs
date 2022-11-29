@@ -3,13 +3,12 @@ use rocket_db_pools::Connection;
 use sqlx::pool::PoolConnection;
 use sqlx::Sqlite;
 
-pub trait Insertable{
-	fn sql_types_string(&self, fields: Vec<String>)->HashMap<String, String>;
-	fn sql_type_id(&self)->String;
+pub trait Insertable<E>{
+	fn sql_types_string(&self, field: E)->String;
 }
 
 #[async_trait]
-pub trait Queryable<T: Insertable, I, DB: sqlx::Database>{
+pub trait Queryable<T: Insertable<E>, I, DB: sqlx::Database, E>{
 	fn get_insert_string(&self)->Result<String, String>;
 	fn get_update_string(&self)->Result<String, String>;
 	fn get_fields(&self)->Vec<String>;

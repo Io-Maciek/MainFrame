@@ -209,18 +209,18 @@ async fn index_logout(mut db: Connection<SQL>, jar: &CookieJar<'_>) -> Redirect 
 	Redirect::to(uri!(index))
 }
 
-
+use std::ops::Deref;
 #[launch]
 fn rocket() -> Rocket<Build> {
 	let figment = rocket::Config::figment().merge(("address", "0.0.0.0"))
 		.merge(("databases.MainFrame", rocket_db_pools::Config {
 			url: "MainFrame.db".into(),
+			//url: "mssql://[USER]:[PWD]@localhost:1433/MainFrame".into(),
 			min_connections: None,
 			max_connections: 1024,
 			connect_timeout: 5,
 			idle_timeout: None,
 		}));
-
 	rocket::custom(figment)
 		.attach(SQL::init())
 		.attach(static_resources_initializer!(

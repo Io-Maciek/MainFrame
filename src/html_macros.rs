@@ -49,6 +49,8 @@ macro_rules! tag {
 	};
 }
 
+
+
 #[macro_export]
 macro_rules! sql_struct {
 	(
@@ -65,8 +67,6 @@ macro_rules! sql_struct {
 		}
 	)=>
 	{
-
-
 		$(#[$main_attr] )*
 		#[derive(Debug)]
 		#[derive(Serialize)]
@@ -79,6 +79,13 @@ macro_rules! sql_struct {
 				$(#[$field_attr] )*
 				$element_visibility $element: $type,
 			)*
+		}
+
+		pub enum Fields{
+			id,
+			$(
+				$element
+			),*
 		}
 
 		#[allow(dead_code)]
@@ -98,49 +105,44 @@ macro_rules! sql_struct {
 
 
 
-
-
 		#[async_trait]
-		impl Queryable<$struct, $id, $sql> for $struct{
+		impl Queryable<$struct, $id, $sql, Fields> for $struct{
 			fn get_insert_string(&self)->Result<String, String>{
-				let mut args = String::new();
+				let mut args = Vec::new();
 
-				let field_map = self.sql_types_string(self.get_fields());
-				let f = self.get_fields();
-				for i in f.iter().enumerate(){
-					args+=field_map.get(i.1).unwrap();
-					if i.0<f.len()-1{
-						args+=", ";
-					}
-				}
+				$(
+					args.push(self.sql_types_string(Fields::$element));
+				)*
+
 
 				let sql_str = stringify!($sql);
 				if sql_str.eq("Sqlite"){
 					Ok(format!(r"INSERT INTO {} ({}) VALUES ({}) RETURNING *",$table,self.get_fields().connect(", "),
-					args)
+					args.connect(","))
 				)
 				}else if sql_str.eq("Mssql"){
-					Ok(format!("INSERT INTO {} OUTPUT inserted.* VALUES ({})",$table, args))
+					Ok(format!("INSERT INTO {} OUTPUT inserted.* VALUES ({})",$table, args.connect(",")))
 				}else{
+					panic!("{}",format!("Database pool '{}' is not yet implemented", sql_str));
 					Err(format!("Database pool '{}' is not yet implemented", sql_str))
 				}
 			}
 
 			fn get_update_string(&self)->Result<String, String>{
 				let mut args = Vec::new();
-
-				let field_map = self.sql_types_string(self.get_fields());
-				for field in &self.get_fields(){
-					args.push(format!("{}={}",&field, field_map.get(field).unwrap()));
-				}
+				$(
+					args.push(format!("{}={}",
+					stringify!($element),&self.sql_types_string(Fields::$element)));
+				)*
 
 				let sql_str = stringify!($sql);
 				if sql_str.eq("Sqlite"){
 					Ok(format!("UPDATE {} SET {} WHERE {} = {} RETURNING *",$table,args.connect(", "), $id_name,
-						&self.sql_type_id()))
+						&self.sql_types_string(Fields::id)))
 
 				}else if sql_str.eq("Mssql"){
-					Ok(format!("UPDATE {} SET {} OUTPUT inserted.* WHERE {}={}",$table,args.connect(", "), $id_name,&self.sql_type_id() ))
+					Ok(format!("UPDATE {} SET {} OUTPUT inserted.* WHERE {}={}",$table,args.connect(", "), $id_name,
+					&self.sql_types_string(Fields::id)))
 				}else{
 					Err(format!("Database pool '{}' is not yet implemented", sql_str))
 				}

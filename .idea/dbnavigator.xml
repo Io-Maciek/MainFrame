@@ -38,7 +38,8 @@
 --SELECT F.*,U."Username" FROM Files AS F JOIN Users AS U ON F."UserID"=U.ID;
 --SELECT F.*,U."Username" FROM Files AS F JOIN Users AS U ON F.UserID=U.ID WHERE U.ID=21
 
---SELECT F.*, U."Username" FROM "Files" AS F join Users AS U ON U.ID = F."UserID"]]></console>
+--SELECT F.*, U."Username" FROM "Files" AS F join Users AS U ON U.ID = F."UserID"
+SELECT * FROM Users;]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">

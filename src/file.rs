@@ -29,35 +29,23 @@ impl Display for File
 	}
 }
 
-impl Insertable for File {
-	fn sql_types_string(&self, fields: Vec<String>) -> HashMap<String, String> {
-		let mut map = HashMap::new();
-
-		for field in fields {
-			let wynik = if field.eq("UserID"){
-				format!("'{}'",self.UserID)
-			}else if field.eq("Filename"){
-				format!("'{}'",self.Filename)
-			}
-			else if field.eq("Content"){
-				format!("'{}'",self.Content)
-			}else if field.eq("MimeType"){
+impl Insertable<Fields> for File {
+	fn sql_types_string(&self, field: Fields) -> String {
+		match field{
+			Fields::id => self.id.to_string(),
+			Fields::UserID => self.UserID.to_string(),
+			Fields::Filename => format!("'{}'",self.Filename),
+			Fields::Content => format!("'{}'",self.Content),
+			Fields::MimeType => {
 				match self.MimeType.as_ref() {
 					None => "NULL".to_string(),
 					Some(mime) => format!("'{}'", mime)
 				}
-			}else {
-				"".to_string()
-			};
-			map.insert(field, wynik);
+			}
 		}
-		map
-	}
-
-	fn sql_type_id(&self) -> String {
-		self.id.to_string()
 	}
 }
+
 
 impl File {
 	pub async fn get_for_user(db: &mut PoolConnection<Sqlite>, user: &User) -> Vec<File> {
