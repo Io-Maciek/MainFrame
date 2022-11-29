@@ -18,7 +18,7 @@ use rocket::serde::Serialize;
 sql_struct!(
 	Table("Users")
 	ID("ID")
-	pub struct User<Mssql>{
+	pub struct User<Sqlite>{
 		i32,
 		pub Username:String,
 		pub Hash:String,
@@ -27,34 +27,20 @@ sql_struct!(
 	}
 );
 
-impl Insertable for User {
-
-	fn sql_types_string(&self, fields: Vec<String>) -> HashMap<String, String> {
-		let mut map = HashMap::new();
-
-		for field in fields {
-				let wynik = if field.eq("Username"){
-					format!("'{}'",self.Username)
-				}else if field.eq("Hash"){
-					format!("'{}'",self.Hash)
+impl Insertable<Fields> for User{
+	fn sql_types_string(&self, field: Fields) -> String {
+		match field{
+			Fields::id => self.id.to_string(),
+			Fields::Username => format!("'{}'",self.Username),
+			Fields::Hash => format!("'{}'",self.Hash),
+			Fields::Salt => format!("'{}'",self.Salt),
+			Fields::SessionID => {
+				match self.SessionID.as_ref() {
+					None => "NULL".to_string(),
+					Some(sess) => format!("'{}'", sess)
 				}
-				else if field.eq("Salt"){
-					format!("'{}'",self.Salt)
-				}else if field.eq("SessionID"){
-					match self.SessionID.as_ref() {
-						None => "NULL".to_string(),
-						Some(sess) => format!("'{}'", sess)
-					}
-				}else {
-					"".to_string()
-				};
-			map.insert(field,wynik);
+			}
 		}
-		map
-	}
-
-	fn sql_type_id(&self) -> String {
-		self.id.to_string()
 	}
 }
 
@@ -65,16 +51,16 @@ impl Display for User {
 }
 
 impl User {
-	pub async fn get_files(&self, db: &mut PoolConnection<Mssql>) -> Vec<File> {
+	pub async fn get_files(&self, db: &mut PoolConnection<Sqlite>) -> Vec<File> {
 		File::get_for_user(db, &self).await
 	}
 
-	pub async fn get_file(&self, file_id : i32,db: &mut PoolConnection<Mssql>)->Option<File>{
+	pub async fn get_file(&self, file_id : i32,db: &mut PoolConnection<Sqlite>)->Option<File>{
 		sqlx::query_as::<_, File>(&format!("SELECT F.* FROM Files AS F JOIN Users AS U ON F.UserID=U.ID WHERE U.ID={} AND F.ID={}",&self.id,file_id))
 			.fetch_one(db).await.ok()
 	}
 
-	pub async fn create_new_session(&mut self, db: &mut PoolConnection<Mssql>, jar: &CookieJar<'_>) {
+	pub async fn create_new_session(&mut self, db: &mut PoolConnection<Sqlite>, jar: &CookieJar<'_>) {
 		let rng = ring::rand::SystemRandom::new();
 		let mut s = [0u8; 127];
 		rng.fill(&mut s).unwrap();
@@ -86,7 +72,7 @@ impl User {
 		jar.add(Cookie::build("session_id", encoded_session).http_only(true).finish());
 	}
 
-	pub async fn get_from_cookies(db: &mut PoolConnection<Mssql>, jar: &CookieJar<'_>) -> Option<User> {
+	pub async fn get_from_cookies(db: &mut PoolConnection<Sqlite>, jar: &CookieJar<'_>) -> Option<User> {
 		match jar.get("session_id") {
 			None => None,
 			Some(session_id) => {
