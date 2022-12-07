@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter, write};
-use crate::{File, sql_struct};
+use crate::{File, sql_struct, UserFiles};
 use crate::sql_traits::{Insertable, Queryable};
 use crate::SQL;
 use rocket_db_pools::Connection;
@@ -14,6 +14,7 @@ use crate::user_maker::UserMaker;
 use sqlx::pool::PoolConnection;
 use sqlx::{Error, Mssql, Sqlite};
 use rocket::serde::Serialize;
+
 //pub struct User<Sqlite>{
 sql_struct!(
 	Table("Users")
@@ -51,13 +52,12 @@ impl Display for User {
 }
 
 impl User {
-	pub async fn get_files(&self, db: &mut PoolConnection<Sqlite>) -> Vec<File> {
+	pub async fn get_files(&self, db: &mut PoolConnection<Sqlite>) -> [Vec<File>; 2] {
 		File::get_for_user(db, &self).await
 	}
 
 	pub async fn get_file(&self, file_id : i32,db: &mut PoolConnection<Sqlite>)->Option<File>{
-		sqlx::query_as::<_, File>(&format!("SELECT F.* FROM Files AS F JOIN Users AS U ON F.UserID=U.ID WHERE U.ID={} AND F.ID={}",&self.id,file_id))
-			.fetch_one(db).await.ok()
+		UserFiles::get_file(db, &self, file_id).await
 	}
 
 	pub async fn create_new_session(&mut self, db: &mut PoolConnection<Sqlite>, jar: &CookieJar<'_>) {

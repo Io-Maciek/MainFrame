@@ -68,11 +68,11 @@
 
     </form>
     <br>
-    {{#if files}}
+    {{#if files_owned}}
         <div class="container">
-
+            <h2>Twoje pliki</h2>
             <ul id="files_list">
-                {{#each files}}
+                {{#each files_owned}}
                     <li>
                         <div class="row justify-content-evenly">
                             <div class="col-8">
@@ -106,6 +106,22 @@
         <i>
             <h6 style="color: white;">Tu będą wyświetlane twoje pliki</h6>
         </i>
+    {{/if}}
+
+    {{#if files_shared}}
+        <br>
+        <div class="container">
+            <h2>Udostępnione</h2>
+            <ul id="files_list_shared">
+                {{#each files_shared}}
+                    <li>
+                        <h5>
+                            <a class="badge badge-danger" href="/get/{{ this.id }}/{{this.Filename}}">{{this.Filename}}</a>
+                        </h5>
+                    </li>
+                {{/each}}
+            </ul>
+        </div>
     {{/if}}
 
 

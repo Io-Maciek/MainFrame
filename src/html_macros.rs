@@ -34,6 +34,7 @@ macro_rules! tag_str {
 	};
 }
 
+
 #[macro_export]
 macro_rules! tag {
 	($($h :expr)+ $(, $x:expr)*) => {
@@ -48,8 +49,6 @@ macro_rules! tag {
 		}
 	};
 }
-
-
 
 #[macro_export]
 macro_rules! sql_struct {
@@ -67,6 +66,7 @@ macro_rules! sql_struct {
 		}
 	)=>
 	{
+
 		$(#[$main_attr] )*
 		#[derive(Debug)]
 		#[derive(Serialize)]
@@ -81,12 +81,17 @@ macro_rules! sql_struct {
 			)*
 		}
 
-		pub enum Fields{
+
+		pub enum Fields
+		{
 			id,
 			$(
 				$element
 			),*
 		}
+
+
+
 
 		#[allow(dead_code)]
 		impl $struct{
@@ -100,7 +105,7 @@ macro_rules! sql_struct {
 			}
 
 			pub fn get_table(&self)->String{String::from($table)}
-			pub fn get_id_name(&self)->String{String::from($id_name)}
+			//pub fn get_id_name(&self)->String{String::from($id_name)}
 		}
 
 
@@ -144,6 +149,7 @@ macro_rules! sql_struct {
 					Ok(format!("UPDATE {} SET {} OUTPUT inserted.* WHERE {}={}",$table,args.connect(", "), $id_name,
 					&self.sql_types_string(Fields::id)))
 				}else{
+					panic!("{}",format!("Database pool '{}' is not yet implemented", sql_str));
 					Err(format!("Database pool '{}' is not yet implemented", sql_str))
 				}
 			}

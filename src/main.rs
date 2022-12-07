@@ -10,7 +10,7 @@ use rocket::response::{Flash, Redirect, Responder};
 use crate::sql_connectivity::SQL;
 use rocket_db_pools::{Connection, Database};
 use sqlx::pool::PoolConnection;
-use sqlx::{pool, Sqlite, SqlitePool};
+use sqlx::{Error, pool, Sqlite, SqlitePool};
 use crate::file::File;
 use crate::sql_traits::Queryable;
 use crate::user_maker::UserMaker;
@@ -36,6 +36,7 @@ mod users;
 mod user_maker;
 mod file;
 mod hbs_helpers;
+mod users_files;
 
 #[derive(Serialize)]
 struct Message {
@@ -81,10 +82,12 @@ async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>, flash: Option<Flash
 			//
 			 */
 
+			let files = user.get_files(&mut *db).await;
 			Template::render("index_zalogowany", context! {
 				title: "MainFrame",
 				user: &user,
-				files: user.get_files(&mut *db).await
+				files_owned: &files[0],
+				files_shared: &files[1]
 			})
 		}
 	}
@@ -111,11 +114,15 @@ async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>, content_type: &
 						Some(files) => {
 							let file = &files[0];
 							let pdf = HEXUPPER.encode(&std::fs::read(&file.path).unwrap());
-							File::new(user.id,file.file_name.as_ref().unwrap().clone(),
-									  pdf,file.content_type.as_ref().map(|x| x.to_string()))
-							.insert(&mut *db).await;
 
-							format!("Udało się!")
+							match File::new(file.file_name.as_ref().unwrap().clone(),
+									  pdf,file.content_type.as_ref().map(|x| x.to_string()))
+							.insert_for_owner(&mut *db, &user).await
+							{
+								Ok(_) => format!("Udało się!"),
+								Err(e) => {format!("{:?}",e)}
+							}
+
 						}
 					}
 				}
@@ -210,6 +217,8 @@ async fn index_logout(mut db: Connection<SQL>, jar: &CookieJar<'_>) -> Redirect 
 }
 
 use std::ops::Deref;
+use crate::users_files::UserFiles;
+
 #[launch]
 fn rocket() -> Rocket<Build> {
 	let figment = rocket::Config::figment().merge(("address", "0.0.0.0"))
