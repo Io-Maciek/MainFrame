@@ -25,6 +25,10 @@ use rocket_include_static_resources::{static_resources_initializer, static_respo
 use crate::handlebars::HelperDef;
 
 
+//TODO deleting user from sharing file in owner account
+//TODO repair changing name of file (only for file owner)
+//TODO searching shared file by name (works only for owned files)
+
 #[macro_use]
 extern crate rocket;
 
@@ -83,14 +87,38 @@ async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>, flash: Option<Flash
 			 */
 
 			let files = user.get_files(&mut *db).await;
+
+			let mut sharing_info = Vec::<Vec::<User>>::new();
+
+			for f in &files[0] {
+				let d = UserFiles::get_from_user_and_file(&mut *db, &user, f).await.unwrap();
+				let mut t = d.sharing_users_of_file(&mut *db).await.unwrap();
+				sharing_info.push(t);
+			}
+
 			Template::render("index_zalogowany", context! {
 				title: "MainFrame",
 				user: &user,
+				sharing_info: &sharing_info,
 				files_owned: &files[0],
 				files_shared: &files[1]
 			})
 		}
 	}
+}
+
+#[post("/add_new_sharing_user?<file_id>", data="<username>")]
+async fn add_new_sharing_user(jar: &CookieJar<'_>, mut db: Connection<SQL>,username: Form<String>, file_id : i32)->Redirect{
+	match User::get_from_cookies(&mut *db,jar).await{
+		None => println!("NALEŻY SIĘ ZALOGOWAĆ"),
+		Some(user_owner) => {
+			let f= &File::get_one(&mut *db, file_id).await.unwrap();
+			UserFiles::add_shared_user(&mut *db, &user_owner,&f,username.into_inner()).await;
+
+		}
+	}
+
+	Redirect::to(uri!(index))
 }
 
 #[post("/plik", data = "<data>")]
@@ -235,7 +263,7 @@ fn rocket() -> Rocket<Build> {
 		.attach(static_resources_initializer!(
 			"favicon" => "img/favicon.png",
 		))
-		.mount("/", routes![favicon, index, index_post,index_login,index_logout,get_file_by_id,send_file,delete_file,change_filename])
+		.mount("/", routes![add_new_sharing_user, favicon, index, index_post,index_login,index_logout,get_file_by_id,send_file,delete_file,change_filename])
 		.attach(Template::custom(|eng| {
 			eng.handlebars.register_helper("mod", Box::new(hbs_helpers::modulo));
 		}))

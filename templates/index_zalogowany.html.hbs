@@ -27,8 +27,48 @@
                 a.classList.remove(a.classList[1]);
                 a.classList.add("btn-danger")
                 a.innerHTML="Usuń";
+                a.removeAttribute("hidden", "");
                 return false;
             }
+            {{#if sharing_info}}
+                {{#each sharing_info}}
+                    function change_sharing_info{{@index}}(filename, file_id)
+                    {
+                    let users_info = `
+                        {{#if this}}
+                            {{#each this}}
+                                {{this.Username}} TODO Usuń<br>
+                            {{/each}}
+                        {{else}}
+                            <br>
+                            {{!BRAK UDOSTĘPNIANIA}}
+                        {{/if}}
+                        `;
+                        document.getElementById("modalTitle").innerHTML="Udostępnianie";
+                        document.getElementById("divModalContent").innerHTML = `
+                        Dostep do pliku '<b><i>`+filename+`</i></b>':<br>` + users_info+
+                        `
+                            <form method='POST' action='/add_new_sharing_user?file_id=`+file_id+`'>
+                                <div class="form-row">
+                                    <div class="col-11">
+                                        <input type='text' class="form-control" placeholder='Username' name='username'/>
+                                    </div>
+                                    <div class="col-1">
+                                        <button class="btn btn-success" type='submit'>+</button>
+                                    </div>
+                                </div>
+                            </form>
+                        `;
+                        let a = document.getElementById("aModalHref");
+                        a.setAttribute("hidden", "");
+                        return false;
+                    }
+                {{/each}}
+            {{/if}}
+
+
+
+
             function change_filename_info(filename, id)
             {
                 document.getElementById("modalTitle").innerHTML="Zmień nazwę pliku";
@@ -42,6 +82,7 @@
                 a.classList.remove(a.classList[1]);
                 a.classList.add("btn-success");
                 a.innerHTML="Potwierdź";
+                a.removeAttribute("hidden", "");
                 return false;
             }
             function change_aHref_to_filename(new_filename, id)
@@ -85,9 +126,12 @@
                             </div>
                             <div class="col-4">
                                 <div class="float-right" style="display: inline;">
+                                    <button onclick="change_sharing_info{{@index}}('{{this.Filename}}', {{this.id}})" type="button" class="btn btn-light" data-toggle="modal" data-target="#modelDelete">Udostępnianie</button>
+
                                     <button onclick="change_filename_info('{{this.Filename}}', {{this.id}})" type="button" class="btn btn-info"
                                     data-toggle="modal" data-target="#modelDelete">Zmień nazwę
                                     </button>
+
                                     <button onclick="change_delete_info('{{this.Filename}}', {{this.id}})" type="button" class="btn btn-warning"
                                             data-toggle="modal" data-target="#modelDelete">Usuń
                                     </button>
@@ -115,9 +159,18 @@
             <ul id="files_list_shared">
                 {{#each files_shared}}
                     <li>
-                        <h5>
-                            <a class="badge badge-danger" href="/get/{{ this.id }}/{{this.Filename}}">{{this.Filename}}</a>
-                        </h5>
+                        <div class="row justify-content-evenly">
+                            <div class="col-8">
+                                <h5>
+                                    <a target="_blank" class="badge badge-danger" href="/get/{{ this.id }}/{{this.Filename}}">{{this.Filename}}</a>
+                                </h5>
+                            </div>
+                            <div class="col-4">
+                                <div class="float-right" style="display: inline;">
+                                    <a  href="/delete/{{this.id}}"><button  class="btn btn-danger">Wyłącz</button></a>
+                                </div>
+                            </div>
+                        </div>
                     </li>
                 {{/each}}
             </ul>

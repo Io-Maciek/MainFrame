@@ -65,7 +65,16 @@ impl File {
 	}
 
 	pub async fn delete_file_from_user(self,db: &mut PoolConnection<Sqlite>, jar:&CookieJar<'_>)->Result<(),String>{
-		todo!()
+		match User::get_from_cookies(db, jar).await{
+			None => Err("Należy się zalogować".to_string()),
+			Some(user) => {
+				println!("ZALOGOWANY");
+				match UserFiles::delete(db, &user, &self).await{
+					Ok(_) => Ok(()),
+					Err(err) => Err(err)
+				}
+			}
+		}
 		/*match User::get_from_cookies(db,jar).await{
 			None => Err(String::from("Należy się zalogować")),
 			Some(u) => {
@@ -82,7 +91,12 @@ impl File {
 	}
 
 	pub async fn change_filename(&mut self,db: &mut PoolConnection<Sqlite>, jar:&CookieJar<'_>, new_filename:String)->Result<(), &'static str>{
-		todo!()
+		match User::get_from_cookies(db, jar).await{
+			None => Err("Należy się zalogować"),
+			Some(user) => {
+				todo!()
+			}
+		}
 		/*match User::get_from_cookies(db, jar).await{
 			None => Err("Należy się zalogować"),
 			Some(user) => {

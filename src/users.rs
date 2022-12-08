@@ -28,6 +28,12 @@ sql_struct!(
 	}
 );
 
+impl PartialEq<User> for User{
+	fn eq(&self, other: &User) -> bool {
+		other.id == self.id
+	}
+}
+
 impl Insertable<Fields> for User{
 	fn sql_types_string(&self, field: Fields) -> String {
 		match field{

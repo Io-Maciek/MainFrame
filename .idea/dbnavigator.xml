@@ -50,6 +50,9 @@
 /*SELECT F.* FROM UserFiles AS UF JOIN Users AS U ON UF.UserID = U.ID JOIN Files AS F ON F.ID = UF.FileID
 WHERE U.ID = 0 AND UF.Owner = 1*/
 
+--INSERT INTO UserFiles (UserID, FileID, Owner) VALUES(28,8,0)
+
+
 SELECT * FROM Users;
 SELECT * FROM UserFiles;
 SELECT ID, Filename, MimeType FROM Files;]]></console>
