@@ -26,7 +26,6 @@ use crate::handlebars::HelperDef;
 
 
 //TODO deleting user from sharing file in owner account
-//TODO repair changing name of file (only for file owner)
 //TODO searching shared file by name (works only for owned files)
 
 #[macro_use]
