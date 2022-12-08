@@ -34,16 +34,26 @@
                 {{#each sharing_info}}
                     function change_sharing_info{{@index}}(filename, file_id)
                     {
-                    let users_info = `
-                        {{#if this}}
-                            {{#each this}}
-                                {{this.Username}} TODO Usuń<br>
-                            {{/each}}
-                        {{else}}
+                        let users_info = `
+                            {{#if this}}
                             <br>
-                            {{!BRAK UDOSTĘPNIANIA}}
-                        {{/if}}
-                        `;
+                                <div class="form-row">
+                                {{#each this}}
+                                    <div class="col-11">
+                                        <input disabled type='text' class="form-control" value="{{this.Username}}"/>
+                                    </div>
+                                    <div class="col-1">
+                                       <a href="/delete_sharing/`+file_id+`/{{this.Username}}" style="width:37px; color: white;" class="btn btn-danger">-</a>
+                                    </div>
+                                {{/each}}
+                                </div>
+                                <br>
+                            {{else}}
+                                <br>
+                                {{!BRAK UDOSTĘPNIANIA}}
+                            {{/if}}
+                            `;
+
                         document.getElementById("modalTitle").innerHTML="Udostępnianie";
                         document.getElementById("divModalContent").innerHTML = `
                         Dostep do pliku '<b><i>`+filename+`</i></b>':<br>` + users_info+
@@ -54,7 +64,7 @@
                                         <input type='text' class="form-control" placeholder='Username' name='username'/>
                                     </div>
                                     <div class="col-1">
-                                        <button class="btn btn-success" type='submit'>+</button>
+                                        <button style="width:37px;" class="btn btn-success" type='submit'>+</button>
                                     </div>
                                 </div>
                             </form>
@@ -126,10 +136,12 @@
                             </div>
                             <div class="col-4">
                                 <div class="float-right" style="display: inline;">
-                                    <button onclick="change_sharing_info{{@index}}('{{this.Filename}}', {{this.id}})" type="button" class="btn btn-light" data-toggle="modal" data-target="#modelDelete">Udostępnianie</button>
+                                    <button onclick="change_sharing_info{{@index}}('{{this.Filename}}', {{this.id}})" type="button" class="btn btn-light"
+                                            data-toggle="modal" data-target="#modelDelete">Udostępnianie
+                                    </button>
 
                                     <button onclick="change_filename_info('{{this.Filename}}', {{this.id}})" type="button" class="btn btn-info"
-                                    data-toggle="modal" data-target="#modelDelete">Zmień nazwę
+                                            data-toggle="modal" data-target="#modelDelete">Zmień nazwę
                                     </button>
 
                                     <button onclick="change_delete_info('{{this.Filename}}', {{this.id}})" type="button" class="btn btn-warning"

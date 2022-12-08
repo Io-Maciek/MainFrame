@@ -52,6 +52,9 @@ WHERE U.ID = 0 AND UF.Owner = 1*/
 
 --INSERT INTO UserFiles (UserID, FileID, Owner) VALUES(28,8,0)
 
+SELECT * FROM "UserFiles" WHERE ID = (SELECT UF.ID FROM UserFiles AS UF JOIN Files AS F ON F.ID = UF.FileID
+														JOIN Users AS U ON U.ID = UF.UserID WHERE F.ID = 10 AND U.Username = 'test123'
+														AND Owner = 0);
 
 SELECT * FROM Users;
 SELECT * FROM UserFiles;

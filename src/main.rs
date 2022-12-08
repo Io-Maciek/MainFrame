@@ -25,7 +25,6 @@ use rocket_include_static_resources::{static_resources_initializer, static_respo
 use crate::handlebars::HelperDef;
 
 
-//TODO deleting user from sharing file in owner account
 //TODO searching shared file by name (works only for owned files)
 
 #[macro_use]
@@ -103,6 +102,41 @@ async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>, flash: Option<Flash
 				files_shared: &files[1]
 			})
 		}
+	}
+}
+
+#[get("/delete_sharing/<file_id>/<username>")]
+async fn delete_sharing(jar: &CookieJar<'_>, mut db: Connection<SQL>,username: String, file_id : i32)->Result<Redirect, String>{
+	match File::get_one(&mut *db, file_id).await{
+		Ok(file) => {
+			match User::get_from_cookies(&mut *db, jar).await{
+				None => Err(String::from("Należy być zalogowanym!")),
+				Some(owner) => {
+
+					match UserFiles::get_from_user_and_file(&mut *db, &owner, &file).await{
+						Ok(uf_owner) => {
+							if uf_owner.Owner == true{
+
+								let q = format!(r"DELETE FROM UserFiles WHERE ID = (SELECT UF.ID FROM UserFiles AS UF JOIN Files AS F ON F.ID = UF.FileID
+														JOIN Users AS U ON U.ID = UF.UserID WHERE F.ID = {} AND U.Username = '{}'
+														AND Owner = 0)",file_id, username);
+								match sqlx::query_as::<_, UserFiles>(&q).fetch_optional(&mut *db).await{
+									Ok(k) => {
+										Ok(Redirect::to(uri!(index)))
+									}
+									Err(er) => Err(format!("{:?}",er))
+								}
+
+							}else{
+								Err(String::from("Musisz być właścicielem pliku!"))
+							}
+						}
+						Err(err) => Err(format!("{:?}",err))
+					}
+				}
+			}
+		}
+		Err(err) => Err(String::from("Plik nie istenije"))
 	}
 }
 
@@ -262,7 +296,7 @@ fn rocket() -> Rocket<Build> {
 		.attach(static_resources_initializer!(
 			"favicon" => "img/favicon.png",
 		))
-		.mount("/", routes![add_new_sharing_user, favicon, index, index_post,index_login,index_logout,get_file_by_id,send_file,delete_file,change_filename])
+		.mount("/", routes![delete_sharing, add_new_sharing_user, favicon, index, index_post,index_login,index_logout,get_file_by_id,send_file,delete_file,change_filename])
 		.attach(Template::custom(|eng| {
 			eng.handlebars.register_helper("mod", Box::new(hbs_helpers::modulo));
 		}))
