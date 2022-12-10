@@ -42,9 +42,25 @@ mod users_files;
 
 #[derive(Serialize)]
 struct Message {
-	html_color: String,
-	message: String,
+	color: String,
+	text: String,
 }
+
+impl Message{
+	pub fn get_from_flash(flash: Option<FlashMessage<'_>>)->Option<Message>{
+		let mut mess: Option<Message> = None;
+		if flash.is_some() {
+			let fl = flash.unwrap().into_inner();
+			if &fl.0 == "error" {
+				mess = Some(Message { color: "danger".to_string(), text: fl.1 })
+			} else if &fl.0 == "success" {
+				mess = Some(Message { color: "success".to_string(), text: fl.1 })
+			}
+		}
+		mess
+	}
+}
+
 
 #[get("/")]
 async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>, flash: Option<FlashMessage<'_>>) -> Template {
@@ -55,112 +71,95 @@ async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>, flash: Option<Flash
 				GŁÓWNA STRONA DLA NIEZALOGOWANEGO UŻYTKOWNIKA
 			//
 			 */
-			let mut msg_login = None::<Message>;
-			let mut msg_rej = None::<Message>;
 
-			if flash.is_some() {
-				let fl = flash.unwrap().into_inner();
-				match &fl.0 == "error_log" {
-					true => msg_login = Some(Message { html_color: "danger".to_string(), message: fl.1 }),
-					false => {
-						match &fl.0 == "error_rej" {
-							true => msg_rej = Some(Message { html_color: "danger".to_string(), message: fl.1 }),
-							false => msg_rej = Some(Message { html_color: "success".to_string(), message: fl.1 }),
-						}
-					}
-				}
-			}
 
-			Template::render("index_niezalogowany", context! {
+		Template::render("index_niezalogowany", context! {
 					title: "MainFrame",
-					msg_rej : msg_rej,
-					msg_login: msg_login
+					message : Message::get_from_flash(flash),
 				})
+	}
+	Some(user) => {
+		/*
+		//
+			GŁÓWNA STRONA DLA ZALOGOWANYCH
+		//
+		 */
+
+		let files = user.get_files(&mut *db).await;
+
+		let mut sharing_info = Vec::<Vec::<User>>::new();
+
+		for f in &files[0] {
+			let d = UserFiles::get_from_user_and_file(&mut *db, &user, f).await.unwrap();
+			let mut t = d.sharing_users_of_file(&mut *db).await.unwrap();
+			sharing_info.push(t);
 		}
-		Some(user) => {
-			/*
-			//
-				GŁÓWNA STRONA DLA ZALOGOWANYCH
-			//
-			 */
 
-			let files = user.get_files(&mut *db).await;
-
-			let mut sharing_info = Vec::<Vec::<User>>::new();
-
-			for f in &files[0] {
-				let d = UserFiles::get_from_user_and_file(&mut *db, &user, f).await.unwrap();
-				let mut t = d.sharing_users_of_file(&mut *db).await.unwrap();
-				sharing_info.push(t);
-			}
-
-			Template::render("index_zalogowany", context! {
+		Template::render("index_zalogowany", context! {
 				title: "MainFrame",
 				user: &user,
 				sharing_info: &sharing_info,
 				files_owned: &files[0],
-				files_shared: &files[1]
+				files_shared: &files[1],
+				message: Message::get_from_flash(flash),
 			})
-		}
 	}
+}
 }
 
 #[get("/delete_sharing/<file_id>/<username>")]
-async fn delete_sharing(jar: &CookieJar<'_>, mut db: Connection<SQL>,username: String, file_id : i32)->Result<Redirect, String>{
-	match File::get_one(&mut *db, file_id).await{
+async fn delete_sharing(jar: &CookieJar<'_>, mut db: Connection<SQL>, username: String, file_id: i32) -> Flash<Redirect> {
+	match File::get_one(&mut *db, file_id).await {
 		Ok(file) => {
-			match User::get_from_cookies(&mut *db, jar).await{
-				None => Err(String::from("Należy być zalogowanym!")),
+			match User::get_from_cookies(&mut *db, jar).await {
+				None => Flash::error(Redirect::to(uri!(index)), "Należy się zalogować!"),
 				Some(owner) => {
-
-					match UserFiles::get_from_user_and_file(&mut *db, &owner, &file).await{
+					match UserFiles::get_from_user_and_file(&mut *db, &owner, &file).await {
 						Ok(uf_owner) => {
-							if uf_owner.Owner == true{
-
+							if uf_owner.Owner == true {
 								let q = format!(r"DELETE FROM UserFiles WHERE ID = (SELECT UF.ID FROM UserFiles AS UF JOIN Files AS F ON F.ID = UF.FileID
 														JOIN Users AS U ON U.ID = UF.UserID WHERE F.ID = {} AND U.Username = '{}'
-														AND Owner = 0)",file_id, username);
-								match sqlx::query_as::<_, UserFiles>(&q).fetch_optional(&mut *db).await{
+														AND Owner = 0)", file_id, username);
+								match sqlx::query_as::<_, UserFiles>(&q).fetch_optional(&mut *db).await {
 									Ok(k) => {
-										Ok(Redirect::to(uri!(index)))
+										Flash::success(Redirect::to(uri!(index)),
+													   format!("Przestano udostępniać plik '{}' użytkownikowi '{}'",file.Filename, username))
 									}
-									Err(er) => Err(format!("{:?}",er))
+									Err(er) => Flash::error(Redirect::to(uri!(index)), format!("ERR: {:?}",er))
 								}
-
-							}else{
-								Err(String::from("Musisz być właścicielem pliku!"))
+							} else {
+								Flash::error(Redirect::to(uri!(index)), format!("Nie jesteś właścicielem pliku '{}'!",file.Filename))
 							}
 						}
-						Err(err) => Err(format!("{:?}",err))
+						Err(err) => Flash::error(Redirect::to(uri!(index)), format!("ERR: {:?}",err))
 					}
 				}
 			}
 		}
-		Err(err) => Err(String::from("Plik nie istenije"))
+		Err(err) => Flash::error(Redirect::to(uri!(index)), "Plik nie istnieje!")
 	}
 }
 
-#[post("/add_new_sharing_user?<file_id>", data="<username>")]
-async fn add_new_sharing_user(jar: &CookieJar<'_>, mut db: Connection<SQL>,username: Form<String>, file_id : i32)->Redirect{
-	match User::get_from_cookies(&mut *db,jar).await{
-		None => println!("NALEŻY SIĘ ZALOGOWAĆ"),
+#[post("/add_new_sharing_user?<file_id>", data = "<username>")]
+async fn add_new_sharing_user(jar: &CookieJar<'_>, mut db: Connection<SQL>, username: Form<String>, file_id: i32) -> Flash<Redirect> {
+	match User::get_from_cookies(&mut *db, jar).await {
+		None => Flash::error(Redirect::to(uri!(index)), "Należy się zalogować!"),
 		Some(user_owner) => {
-			let f= &File::get_one(&mut *db, file_id).await.unwrap();
-			UserFiles::add_shared_user(&mut *db, &user_owner,&f,username.into_inner()).await;
-
+			let f = File::get_one(&mut *db, file_id).await.unwrap();
+			let filename = &f.Filename;
+			match UserFiles::add_shared_user(&mut *db, &user_owner, &f, username.clone()).await{
+				Ok(_) => Flash::success(Redirect::to(uri!(index)), format!("Udostępniono plik '{}' użytkownikowi '{}'",filename, username.into_inner())),
+				Err(err) => Flash::error(Redirect::to(uri!(index)), err),
+			}
 		}
 	}
-
-	Redirect::to(uri!(index))
 }
 
 #[post("/plik", data = "<data>")]
-async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>, content_type: &ContentType, data: Data<'_>) -> String {
+async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>, content_type: &ContentType, data: Data<'_>) -> Flash<Redirect> {
 	//TODO przedstawić graficznie lepiej wysyłanie plików
 	match User::get_from_cookies(&mut *db, jar).await {
-		None => {
-			String::from("Trzeba być zalogowanym!")
-		}
+		None => Flash::error(Redirect::to(uri!(index)), "Należy się zalogować!"),
 		Some(user) => {
 			let options = MultipartFormDataOptions::with_multipart_form_data_fields(
 				vec![
@@ -171,51 +170,48 @@ async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>, content_type: &
 			match MultipartFormData::parse(content_type, data, options).await {
 				Ok(multipart_form_data) => {
 					match multipart_form_data.files.get("myfile") {
-						None => String::from("Brak pliku"),
+						None => Flash::error(Redirect::to(uri!(index)), "Należy przesłać plik."),
 						Some(files) => {
 							let file = &files[0];
 							let pdf = HEXUPPER.encode(&std::fs::read(&file.path).unwrap());
 
 							match File::new(file.file_name.as_ref().unwrap().clone(),
-									  pdf,file.content_type.as_ref().map(|x| x.to_string()))
-							.insert_for_owner(&mut *db, &user).await
+											pdf, file.content_type.as_ref().map(|x| x.to_string()))
+								.insert_for_owner(&mut *db, &user).await
 							{
-								Ok(_) => format!("Udało się!"),
-								Err(e) => {format!("{:?}",e)}
+								Ok(_) => Flash::success(Redirect::to(uri!(index)), format!("Plik '{}' został przesłany!",file.file_name.as_ref().unwrap())) ,
+								Err(e) => Flash::error(Redirect::to(uri!(index)), format!("{:?}",e)),
 							}
-
 						}
 					}
 				}
-				Err(err) => {
-					format!("{:?}", err)
-				}
+				Err(err) =>  Flash::error(Redirect::to(uri!(index)), "Za duży plik! (10MB)")
 			}
 		}
 	}
 }
 
 #[get("/delete/<file_id>")]
-async fn delete_file(jar: & CookieJar<'_>, mut db: Connection<SQL>, file_id: i32)->Result<Redirect, String>{
+async fn delete_file(jar: &CookieJar<'_>, mut db: Connection<SQL>, file_id: i32) -> Result<Redirect, String> {
 	match File::get_one(&mut *db, file_id).await {
 		Err(_) => Err(String::from("Plik nie istnieje")),
 		Ok(file) => {
-			match file.delete_file_from_user(&mut *db, jar).await{
-				Ok(_)=>Ok(Redirect::to(uri!(index))),
-				Err(mess)=>Err(mess)
+			match file.delete_file_from_user(&mut *db, jar).await {
+				Ok(_) => Ok(Redirect::to(uri!(index))),
+				Err(mess) => Err(mess)
 			}
 		}
 	}
 }
 
 #[get("/change_filename/<new_filename>/<file_id>")]
-async fn change_filename(jar: & CookieJar<'_>, mut db: Connection<SQL>,new_filename: String, file_id: i32)->Result<Redirect, &'static str>{
+async fn change_filename(jar: &CookieJar<'_>, mut db: Connection<SQL>, new_filename: String, file_id: i32) -> Result<Redirect, &'static str> {
 	match File::get_one(&mut *db, file_id).await {
 		Err(_) => Err("Plik nie istnieje"),
 		Ok(mut file) => {
-			match file.change_filename(&mut *db, jar, new_filename).await{
-				Ok(_)=>Ok(Redirect::to(uri!(index))),
-				Err(mess)=>Err(mess)
+			match file.change_filename(&mut *db, jar, new_filename).await {
+				Ok(_) => Ok(Redirect::to(uri!(index))),
+				Err(mess) => Err(mess)
 			}
 		}
 	}
@@ -251,12 +247,15 @@ async fn get_file_by_id<'a>(jar: &'a CookieJar<'_>, mut db: Connection<SQL>, fil
 
 #[post("/", data = "<maker_user>")]
 async fn index_post(jar: &CookieJar<'_>, mut db: Connection<SQL>, maker_user: Form<UserMaker<'_>>) -> Flash<Redirect> {
+	let u = maker_user.uname;
 	match maker_user.into_inner().create_user() {
 		Ok(user) => {
-			let user = user.insert(&mut *db).await.unwrap();
-			Flash::success(Redirect::to(uri!(index)), format!(" Pomyślnie utworzono użytkownika \"{}\"", user.Username))
+			match user.insert(&mut *db).await{
+				Ok(u) => Flash::success(Redirect::to(uri!(index)), format!(" Pomyślnie utworzono użytkownika \"{}\"", u.Username)),
+				Err(_) => Flash::error(Redirect::to(uri!(index)), format!("Nick \"{}\" jest już zajęty!", u))
+			}
 		}
-		Err(err) => Flash::new(Redirect::to(uri!(index)), "error_rej", err)
+		Err(err) => Flash::error(Redirect::to(uri!(index)), err)
 	}
 }
 
@@ -267,7 +266,7 @@ async fn index_login(mut db: Connection<SQL>, jar: &CookieJar<'_>, maker_user: F
 			user.create_new_session(&mut *db, jar).await;
 			Ok(Redirect::to(uri!(index)))
 		}
-		Err(err) => Err(Flash::new(Redirect::to(uri!(index)), "error_log", err))
+		Err(err) => Err(Flash::error(Redirect::to(uri!(index)), err))
 	}
 }
 

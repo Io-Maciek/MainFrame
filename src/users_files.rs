@@ -102,7 +102,7 @@ impl UserFiles {
 		}
 	}
 
-	pub async fn add_shared_user(db: &mut PoolConnection<Sqlite>, user_owner: &User, file: &File, new_user: String){
+	pub async fn add_shared_user(db: &mut PoolConnection<Sqlite>, user_owner: &User, file: &File, new_user: String)->Result<(), String>{
 		if user_owner.clone().Username.ne(&new_user) {
 			match UserFiles::get_from_user_and_file(db, &user_owner, &file).await {
 				Ok(uf) => {
@@ -116,25 +116,25 @@ impl UserFiles {
 								if !uf.sharing_users_of_file(db).await.unwrap().contains(&shared_user) {
 									let new_sharing = UserFiles::new(shared_user.id, file.id, false);
 									new_sharing.insert(db).await;
-									println!("UDAŁO SIĘ!!!")
+									Ok(())
 								} else {
-									println!("ERR0: \tUŻYTKOWNIK BYŁ JUŻ DODANY");
+									Err(format!("Plik '{}' był już udostępniony użytkownikowi '{}'", file.Filename, new_user))
 								}
 							}
 							Err(er0) => { // user with provided nick does not exist
-								println!("ERR1: \t{:?}", er0);
+								Err(format!("Użytkownik o nicku '{}' nie istnieje!", new_user))
 							}
 						}
 					} else { // adding as someone else is just strange
-						println!("ERR2: you are not the owner of the file!");
+						Err(format!("Nie jesteś właścicielem pliku '{}'!", file.Filename))
 					}
 				}
 				Err(er) => {
-					println!("ERR3: \t{:?}", er);
+					Err(format!("Nie masz dostępu do pliku '{}'", file.Filename))
 				}
 			}
 		}else{
-			println!("ERR4: \tnie można udostępnić pliku samemu sobie")
+			Err(String::from("Nie możesz udostępnić pliku samemu sobie!"))
 		}
 	}
 }

@@ -14,11 +14,19 @@
         {{~> page}}
     </div>
     {{> footer}}
-</div>
 
 
+    {{#if message}}
+    <div style="position: fixed; bottom: 40px; width: 90%; left: 5%" class="alert alert-{{message.color}} alert-dismissible fade show" role="alert">
+        {{message.text}}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    {{/if}}
 
-{{! Bootstrap scripts}}
+
+    {{! Bootstrap scripts}}
 <section id="scriptSection">
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
             integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"

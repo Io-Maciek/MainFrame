@@ -11,7 +11,7 @@ use crate::{PoolConnection, SQL};
 
 #[derive(FromForm, Clone, Debug)]
 pub struct UserMaker<'a>{
-	uname: &'a str,
+	pub uname: &'a str,
 	pwd: &'a str
 }
 
