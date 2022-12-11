@@ -25,8 +25,6 @@ use rocket_include_static_resources::{static_resources_initializer, static_respo
 use crate::handlebars::HelperDef;
 
 
-//TODO searching shared file by name (works only for owned files)
-
 #[macro_use]
 extern crate rocket;
 

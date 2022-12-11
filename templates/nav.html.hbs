@@ -45,6 +45,20 @@
                         li.style.display = "none";
                     }
                 }
+
+
+
+                let li_s_shared = document.getElementById("files_list_shared").getElementsByTagName("li");
+                for (let li of li_s_shared){
+                    let a_content = li.children[0].children[0].children[0].children[0];
+
+                    if(a_content.text.toLowerCase().trim().includes(input.toLowerCase())){
+                        li.style.display = null;
+                    }else{
+                        li.style.display = "none";
+                    }
+                }
+
             }
         </script>
 
