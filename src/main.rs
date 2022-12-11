@@ -85,7 +85,7 @@ async fn index(jar: &CookieJar<'_>, mut db: Connection<SQL>, flash: Option<Flash
 
 		let files = user.get_files(&mut *db).await;
 
-		let mut sharing_info = Vec::<Vec::<User>>::new();
+		let mut sharing_info = Vec::new();
 
 		for f in &files[0] {
 			let d = UserFiles::get_from_user_and_file(&mut *db, &user, f).await.unwrap();
@@ -217,7 +217,7 @@ async fn change_filename(jar: &CookieJar<'_>, mut db: Connection<SQL>, new_filen
 
 #[get("/get/<file_id>/<file_name>")]
 async fn get_file_by_id<'a>(jar: &'a CookieJar<'_>, mut db: Connection<SQL>, file_id: i32, file_name: String) -> Result<RawHtml<String>, &'a str> { //Result<Vec<u8>, &'a str> {
-	//TODO przedstawić to troche lepiej
+	//TODO przedstawić to trochę lepiej
 
 	//sqlx::query_as::<_, User>("").bind(Vec::<u8>::new());
 	match User::get_from_cookies(&mut *db, jar).await {
