@@ -66,14 +66,20 @@ impl File {
 		UserFiles::get_for_user(db, &user).await
 	}
 
-	pub async fn delete_file_from_user(self, db: &mut PoolConnection<Sqlite>, jar: &CookieJar<'_>) -> Result<(), String> {
+	pub async fn delete_file_from_user(self, db: &mut PoolConnection<Sqlite>, jar: &CookieJar<'_>) -> Result<String, String> {
 		match User::get_from_cookies(db, jar).await {
 			None => Err("Należy się zalogować".to_string()),
 			Some(user) => {
 				println!("ZALOGOWANY");
 				match UserFiles::delete(db, &user, &self).await {
-					Ok(_) => Ok(()),
-					Err(err) => Err(err)
+					Ok(owner_value) => {
+						if owner_value{
+							Ok(String::from(format!("Plik '{}' został pomyślnie usunięty",self.Filename)))
+						}else{
+							Ok(String::from(format!("Wyłączono się z udostępniania pliku '{}'",self.Filename)))
+						}
+					},
+					Err(err) => Err(String::from("Nie masz dostępu do tego pliku!"))
 				}
 			}
 		}

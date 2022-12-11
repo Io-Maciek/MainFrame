@@ -192,13 +192,13 @@ async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>, content_type: &
 }
 
 #[get("/delete/<file_id>")]
-async fn delete_file(jar: &CookieJar<'_>, mut db: Connection<SQL>, file_id: i32) -> Result<Redirect, String> {
+async fn delete_file(jar: &CookieJar<'_>, mut db: Connection<SQL>, file_id: i32) -> Flash<Redirect> {
 	match File::get_one(&mut *db, file_id).await {
-		Err(_) => Err(String::from("Plik nie istnieje")),
+		Err(_) => Flash::error(Redirect::to(uri!(index)), "Plik nie istnieje!"),
 		Ok(file) => {
 			match file.delete_file_from_user(&mut *db, jar).await {
-				Ok(_) => Ok(Redirect::to(uri!(index))),
-				Err(mess) => Err(mess)
+				Ok(k) => Flash::success(Redirect::to(uri!(index)), k),
+				Err(mess) => Flash::error(Redirect::to(uri!(index)), mess)
 			}
 		}
 	}

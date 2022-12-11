@@ -58,7 +58,7 @@ impl UserFiles {
 			.fetch_one(db).await.ok()
 	}
 
-	pub async fn delete(db: &mut PoolConnection<Sqlite>, user: &User, file: &File) -> Result<(), String> {
+	pub async fn delete(db: &mut PoolConnection<Sqlite>, user: &User, file: &File) -> Result<bool, String> {
 		let q = format!("SELECT UF.* FROM UserFiles AS UF JOIN Users AS U ON UF.UserID = U.ID JOIN Files AS F ON F.ID = UF.FileID WHERE U.ID = {} AND F.ID = {}",
 						user.id, file.id);
 		match sqlx::query_as::<_, UserFiles>(&q).fetch_one(&mut *db).await {
@@ -76,14 +76,14 @@ impl UserFiles {
 						let deb_file = sqlx::query_as::<_,File>(&format!("DELETE FROM Files WHERE ID={}",file.id)).fetch_all(&mut *db).await;
 						println!("\t{:?}", &deb_file);
 
-						Ok(())
+						Ok(true)
 					}
 					false => {
 						println!("Usuwam udostępnienie!");
 						let q_del_share = format!("DELETE FROM UserFiles WHERE ID = {}", UF.id);
 						let deb = sqlx::query_as::<_, UserFiles>(&q_del_share).fetch_optional(&mut *db).await;
 						println!("\t{:?}", &deb);
-						Ok(())
+						Ok(false)
 					}
 				}
 			}
