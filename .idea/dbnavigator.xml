@@ -29,7 +29,7 @@
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
     <connection id="8836a11b-9ff8-461d-b4ef-55eaebaebcdd">
-      <console name="Connection" type="STANDARD" schema="main" session="Session 1"><![CDATA[/*CREATE TABLE Files(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+      <console name="Connection" type="STANDARD" schema="main" session="Main"><![CDATA[/*CREATE TABLE Files(ID INTEGER PRIMARY KEY AUTOINCREMENT,
                     Filename TEXT NOT NULL,
                     Content TEXT NOT NULL,
                     MimeType TEXT NOT NULL
@@ -52,13 +52,16 @@ WHERE U.ID = 0 AND UF.Owner = 1*/
 
 --INSERT INTO UserFiles (UserID, FileID, Owner) VALUES(28,8,0)
 
-SELECT * FROM "UserFiles" WHERE ID = (SELECT UF.ID FROM UserFiles AS UF JOIN Files AS F ON F.ID = UF.FileID
+/*SELECT * FROM "UserFiles" WHERE ID = (SELECT UF.ID FROM UserFiles AS UF JOIN Files AS F ON F.ID = UF.FileID
 														JOIN Users AS U ON U.ID = UF.UserID WHERE F.ID = 10 AND U.Username = 'test123'
-														AND Owner = 0);
+														AND Owner = 0);*/
+
+DELETE FROM Files;
 
 SELECT * FROM Users;
 SELECT * FROM UserFiles;
-SELECT ID, Filename, MimeType FROM Files;]]></console>
+SELECT ID, Filename, MimeType FROM Files;
+vacuum]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
