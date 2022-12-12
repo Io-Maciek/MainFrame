@@ -54,12 +54,12 @@ impl UserMaker<'_>{
 		let user_check = sqlx::query_as::<_, User>(&format!("SELECT * FROM Users WHERE Username='{}'",&self.uname))
 			.fetch_one(db).await.ok();
 		match user_check{
-			None => Err(format!("Użytkownik o nicku \"{}\" nie istnieje",&self.uname)),
+			None => Err(format!("Użytkownik o nicku <strong>{}</strong> nie istnieje",&self.uname)),
 			Some(u) => {
 				if self==u{
 					Ok(u)
 				}else{
-					Err(String::from("Podano nieprawidłowe hasło"))
+					Err(format!("Podano nieprawidłowe hasło dla użytkownika <strong>{}</strong>", u.Username))
 				}
 			}
 		}
