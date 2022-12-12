@@ -118,19 +118,19 @@ impl UserFiles {
 									new_sharing.insert(db).await;
 									Ok(())
 								} else {
-									Err(format!("Plik '{}' był już udostępniony użytkownikowi '{}'", file.Filename, new_user))
+									Err(format!("Plik <strong>{}</strong> był już udostępniony użytkownikowi <strong>{}</strong>", file.Filename, new_user))
 								}
 							}
 							Err(er0) => { // user with provided nick does not exist
-								Err(format!("Użytkownik o nicku '{}' nie istnieje!", new_user))
+								Err(format!("Użytkownik o nicku <strong>{}</strong> nie istnieje!", new_user))
 							}
 						}
 					} else { // adding as someone else is just strange
-						Err(format!("Nie jesteś właścicielem pliku '{}'!", file.Filename))
+						Err(format!("Nie jesteś właścicielem pliku <strong>{}</strong>!", file.Filename))
 					}
 				}
 				Err(er) => {
-					Err(format!("Nie masz dostępu do pliku '{}'", file.Filename))
+					Err(format!("Nie masz dostępu do pliku <strong>{}</strong>", file.Filename))
 				}
 			}
 		}else{

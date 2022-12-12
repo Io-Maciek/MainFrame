@@ -121,12 +121,12 @@ async fn delete_sharing(jar: &CookieJar<'_>, mut db: Connection<SQL>, username: 
 								match sqlx::query_as::<_, UserFiles>(&q).fetch_optional(&mut *db).await {
 									Ok(k) => {
 										Flash::success(Redirect::to(uri!(index)),
-													   format!("Przestano udostępniać plik '{}' użytkownikowi '{}'",file.Filename, username))
+													   format!("Przestano udostępniać plik <strong>{}</strong> użytkownikowi <strong>{}</strong>",file.Filename, username))
 									}
 									Err(er) => Flash::error(Redirect::to(uri!(index)), format!("ERR: {:?}",er))
 								}
 							} else {
-								Flash::error(Redirect::to(uri!(index)), format!("Nie jesteś właścicielem pliku '{}'!",file.Filename))
+								Flash::error(Redirect::to(uri!(index)), format!("Nie jesteś właścicielem pliku <strong>{}</strong>!",file.Filename))
 							}
 						}
 						Err(err) => Flash::error(Redirect::to(uri!(index)), format!("ERR: {:?}",err))
@@ -146,7 +146,7 @@ async fn add_new_sharing_user(jar: &CookieJar<'_>, mut db: Connection<SQL>, user
 			let f = File::get_one(&mut *db, file_id).await.unwrap();
 			let filename = &f.Filename;
 			match UserFiles::add_shared_user(&mut *db, &user_owner, &f, username.clone()).await{
-				Ok(_) => Flash::success(Redirect::to(uri!(index)), format!("Udostępniono plik '{}' użytkownikowi '{}'",filename, username.into_inner())),
+				Ok(_) => Flash::success(Redirect::to(uri!(index)), format!("Udostępniono plik <strong>{}</strong> użytkownikowi <strong>{}</strong>",filename, username.into_inner())),
 				Err(err) => Flash::error(Redirect::to(uri!(index)), err),
 			}
 		}
@@ -177,13 +177,13 @@ async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>, content_type: &
 											pdf, file.content_type.as_ref().map(|x| x.to_string()))
 								.insert_for_owner(&mut *db, &user).await
 							{
-								Ok(_) => Flash::success(Redirect::to(uri!(index)), format!("Plik '{}' został przesłany!",file.file_name.as_ref().unwrap())) ,
+								Ok(_) => Flash::success(Redirect::to(uri!(index)), format!("Plik <strong>{}</strong> został przesłany!",file.file_name.as_ref().unwrap())) ,
 								Err(e) => Flash::error(Redirect::to(uri!(index)), format!("{:?}",e)),
 							}
 						}
 					}
 				}
-				Err(err) =>  Flash::error(Redirect::to(uri!(index)), "Za duży plik! (10MB)")
+				Err(err) =>  Flash::error(Redirect::to(uri!(index)), "Za duży plik! <i>(10MB)</i>")
 			}
 		}
 	}
@@ -203,28 +203,28 @@ async fn delete_file(jar: &CookieJar<'_>, mut db: Connection<SQL>, file_id: i32)
 }
 
 #[get("/change_filename/<new_filename>/<file_id>")]
-async fn change_filename(jar: &CookieJar<'_>, mut db: Connection<SQL>, new_filename: String, file_id: i32) -> Result<Redirect, &'static str> {
+async fn change_filename(jar: &CookieJar<'_>, mut db: Connection<SQL>, new_filename: String, file_id: i32) -> Result<Redirect, Flash<Redirect>> {
 	match File::get_one(&mut *db, file_id).await {
-		Err(_) => Err("Plik nie istnieje"),
+		Err(_) => Err(Flash::error(Redirect::to(uri!(index)), "Plik nie istnieje!")),
 		Ok(mut file) => {
 			match file.change_filename(&mut *db, jar, new_filename).await {
 				Ok(_) => Ok(Redirect::to(uri!(index))),
-				Err(mess) => Err(mess)
+				Err(mess) => Err(Flash::error(Redirect::to(uri!(index)), mess))
 			}
 		}
 	}
 }
 
 #[get("/get/<file_id>/<file_name>")]
-async fn get_file_by_id<'a>(jar: &'a CookieJar<'_>, mut db: Connection<SQL>, file_id: i32, file_name: String) -> Result<RawHtml<String>, &'a str> { //Result<Vec<u8>, &'a str> {
+async fn get_file_by_id(jar: & CookieJar<'_>, mut db: Connection<SQL>, file_id: i32, file_name: String) -> Result<RawHtml<String>, Flash<Redirect>> { //Result<Vec<u8>, &'a str> {
 	//TODO przedstawić to trochę lepiej
 
 	//sqlx::query_as::<_, User>("").bind(Vec::<u8>::new());
 	match User::get_from_cookies(&mut *db, jar).await {
-		None => Err("Musisz się zalogować"),//niezalogowany
+		None => Err(Flash::error(Redirect::to(uri!(index)), "Należy się zalogować!")),//niezalogowany
 		Some(user) => {                //zalogowany
 			match user.get_file(file_id, &mut *db).await {
-				None => Err("nie masz dostępu do tego pliku!"),    //nie znaleziono pliku
+				None => Err(Flash::error(Redirect::to(uri!(index)), "Nie masz dostępu do tego pliku!")),    //nie znaleziono pliku
 				Some(file) => {                                //plik jest
 					let bytes = file.Content.as_bytes();
 					let hex = HEXUPPER.decode(bytes).unwrap();
@@ -249,8 +249,8 @@ async fn index_post(jar: &CookieJar<'_>, mut db: Connection<SQL>, maker_user: Fo
 	match maker_user.into_inner().create_user() {
 		Ok(user) => {
 			match user.insert(&mut *db).await{
-				Ok(u) => Flash::success(Redirect::to(uri!(index)), format!(" Pomyślnie utworzono użytkownika \"{}\"", u.Username)),
-				Err(_) => Flash::error(Redirect::to(uri!(index)), format!("Nick \"{}\" jest już zajęty!", u))
+				Ok(u) => Flash::success(Redirect::to(uri!(index)), format!(" Pomyślnie utworzono użytkownika <strong>{}</strong>", u.Username)),
+				Err(_) => Flash::error(Redirect::to(uri!(index)), format!("Nick <strong>{}</strong> jest już zajęty!", u))
 			}
 		}
 		Err(err) => Flash::error(Redirect::to(uri!(index)), err)
@@ -299,36 +299,6 @@ fn rocket() -> Rocket<Build> {
 		}))
 }
 
-#[allow(dead_code)]
-async fn page_template<T>(body: T, jar: &CookieJar<'_>, mut db: Connection<SQL>) -> RawHtml<String>
-	where T: std::fmt::Display {
-	let add = match User::get_from_cookies(&mut *db, jar).await {
-		None => "".to_string(),
-		Some(user) =>
-			tag!(a href="/logout",
-				tag!(h5,user.Username)
-			)
-				+ "<br>"
-	};
-
-	html!(
-		tag!(head,
-			tag!(meta charset="utf-8"),
-			tag!(meta name="viewport" content="width=device-width, initial-scale=1"),
-			tag!(link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css"),
-            tag!(script src="https://code.jquery.com/jquery-3.1.1.slim.min.js"),
-            tag!(script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js"),
-            tag!(script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js"),
-            tag!(title, "Main Frame")
-		),// : </head>
-        tag!(body style="background-color:gray",
-        	tag!(div style="padding: 15px;" class="container",
-				add,
-				body
-			)// : </div>
-		)// : </body>
-	)
-}
 
 static_response_handler! {
     "/favicon.png" => favicon => "favicon",

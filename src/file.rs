@@ -74,20 +74,20 @@ impl File {
 				match UserFiles::delete(db, &user, &self).await {
 					Ok(owner_value) => {
 						if owner_value{
-							Ok(String::from(format!("Plik '{}' został pomyślnie usunięty",self.Filename)))
+							Ok(String::from(format!("Plik <strong>{}</strong> został pomyślnie usunięty",self.Filename)))
 						}else{
-							Ok(String::from(format!("Wyłączono się z udostępniania pliku '{}'",self.Filename)))
+							Ok(String::from(format!("Wyłączono się z udostępniania pliku <strong>{}</strong>",self.Filename)))
 						}
 					},
-					Err(err) => Err(String::from("Nie masz dostępu do tego pliku!"))
+					Err(err) => Err(format!("Nie masz dostępu do pliku <strong>{}</strong>",&self.Filename))
 				}
 			}
 		}
 	}
 
-	pub async fn change_filename(&mut self, db: &mut PoolConnection<Sqlite>, jar: &CookieJar<'_>, new_filename: String) -> Result<(), &'static str> {
+	pub async fn change_filename(&mut self, db: &mut PoolConnection<Sqlite>, jar: &CookieJar<'_>, new_filename: String) -> Result<(), String> {
 		match User::get_from_cookies(db, jar).await {
-			None => Err("Należy się zalogować"),
+			None => Err("Należy się zalogować".to_string()),
 			Some(user) => {
 				match UserFiles::get_from_user_and_file(&mut *db, &user, &self).await {
 					Ok(uf) => {
@@ -96,12 +96,12 @@ impl File {
 							&self.update(db).await;
 							Ok(())
 						} else {
-							Err("Nie jesteś właścicielem tego pliku!")
+							Err(format!("Nie jesteś właścicielem pliku <strong>{}</strong>",&self.Filename))
 						}
 					}
 					Err(er) =>{
 						println!("{}",format!("{:?}", er));
-						Err("Nie masz dostępu do tego pliku!")
+						Err(format!("Nie masz dostępu do pliku <strong>{}</strong>",&self.Filename))
 					}
 				}
 			}

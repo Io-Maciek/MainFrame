@@ -1,5 +1,6 @@
 {{#*inline "page"}}
-    <div class="modal fade" id="modelDelete" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal fade" id="modelDelete" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
+         aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -31,7 +32,7 @@
                 return false;
             }
             {{#if sharing_info}}
-                {{#each sharing_info}}
+            {{#each sharing_info}}
                     function change_sharing_info{{@index}}(filename, file_id)
                     {
                         let users_info = `
@@ -51,7 +52,7 @@
                             {{else}}
                                 <br>
                                 {{!BRAK UDOSTĘPNIANIA}}
-                            {{/if}}
+            {{/if}}
                             `;
 
                         document.getElementById("modalTitle").innerHTML="Udostępnianie";
@@ -74,7 +75,7 @@
                         return false;
                     }
                 {{/each}}
-            {{/if}}
+        {{/if}}
 
 
 
@@ -99,10 +100,12 @@
             {
                 document.getElementById("aModalHref").href = "/change_filename/"+new_filename+"/"+id;
             }
+
         </script>
     </div>
 
-    <h4>Witaj <i>{{ user.Username }}</i></h4>
+    <h1 style="color: white;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000; ">Witaj
+        <i>{{ user.Username }}</i></h1>
     <form action="/plik" method="POST" enctype="multipart/form-data">
         <div class="row">
             <div class="col-10">
@@ -121,7 +124,8 @@
     <br>
     {{#if files_owned}}
         <div class="container">
-            <h2>Twoje pliki</h2>
+            <h3 style="color: white;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000; ">Twoje
+                pliki</h3>
             <ul id="files_list">
                 {{#each files_owned}}
                     <li>
@@ -136,21 +140,24 @@
                             </div>
                             <div class="col-4">
                                 <div class="float-right" style="display: inline;">
-                                    <button onclick="change_sharing_info{{@index}}('{{this.Filename}}', {{this.id}})" type="button" class="btn btn-light"
+                                    <button onclick="change_sharing_info{{@index}}('{{this.Filename}}', {{this.id}})"
+                                            type="button" class="btn btn-light"
                                             data-toggle="modal" data-target="#modelDelete">Udostępnianie
                                     </button>
 
-                                    <button onclick="change_filename_info('{{this.Filename}}', {{this.id}})" type="button" class="btn btn-info"
+                                    <button onclick="change_filename_info('{{this.Filename}}', {{this.id}})"
+                                            type="button" class="btn btn-info"
                                             data-toggle="modal" data-target="#modelDelete">Zmień nazwę
                                     </button>
 
-                                    <button onclick="change_delete_info('{{this.Filename}}', {{this.id}})" type="button" class="btn btn-warning"
+                                    <button onclick="change_delete_info('{{this.Filename}}', {{this.id}})" type="button"
+                                            class="btn btn-warning"
                                             data-toggle="modal" data-target="#modelDelete">Usuń
                                     </button>
                                 </div>
                             </div>
                         </div>
-                            <hr style="height: 3px; background: black; border: 0px; opacity: 40%;">
+                        <hr style="height: 3px; background: black; border: 0px; opacity: 40%;">
                     </li>
 
 
@@ -159,27 +166,33 @@
         </div>
 
     {{else}}
-        <i>
-            <h6 style="color: white;">Tu będą wyświetlane twoje pliki</h6>
-        </i>
+        <h6 style="color: white;">
+            <i>
+                Tu będą wyświetlane twoje pliki
+            </i>
+        </h6>
     {{/if}}
 
     {{#if files_shared}}
         <br>
         <div class="container">
-            <h2>Udostępnione</h2>
+            <h3 style="color: white;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000; ">
+                Udostępnione</h3>
             <ul id="files_list_shared">
                 {{#each files_shared}}
                     <li style="margin: 5px;">
                         <div class="row justify-content-evenly">
                             <div class="col-8">
                                 <h5>
-                                    <a target="_blank" class="badge badge-light text-dark" href="/get/{{ this.id }}/{{this.Filename}}">{{this.Filename}}</a>
+                                    <a target="_blank" class="badge badge-light text-dark"
+                                       href="/get/{{ this.id }}/{{this.Filename}}">{{this.Filename}}</a>
                                 </h5>
                             </div>
                             <div class="col-4">
                                 <div class="float-right" style="display: inline;">
-                                    <a href="/delete/{{this.id}}"><button  class="btn btn-warning text-dark">Wyłącz</button></a>
+                                    <a href="/delete/{{this.id}}">
+                                        <button class="btn btn-warning text-dark">Wyłącz</button>
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -192,22 +205,19 @@
 
 
     <section id="addtitionalSection">
-        <style>
-        #myfile ~ #lblMyFile::after {
-            content: "Wyszukaj";
-        }
-
-
-        </style>
         <script>
             function inputFileChanged(){
                 let filename = document.getElementById("myfile").files[0].name;
                 document.getElementById('lblMyFile').innerHTML = filename;
             }
-
-
         </script>
+        <style>
+            #myfile ~ #lblMyFile::after {
+                content: "Wyszukaj";
+            }
+        </style>
     </section>
+
 
 {{/inline}}
 {{> layout}}
