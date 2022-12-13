@@ -29,16 +29,19 @@
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
     <connection id="8836a11b-9ff8-461d-b4ef-55eaebaebcdd">
-      <console name="Connection" type="STANDARD" schema="main" session="Main"><![CDATA[/*CREATE TABLE Files(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+      <console name="Connection" type="STANDARD" schema="main" session="Main"><![CDATA[/*CREATE TABLE Users(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Username TEXT NOT NULL UNIQUE,
+                    Hash TEXT NOT NULL,
+                    Salt TEXT NOT NULL,
+                    SessionID TEXT
+                    );*/
+
+/*CREATE TABLE Files(ID INTEGER PRIMARY KEY AUTOINCREMENT,
                     Filename TEXT NOT NULL,
                     Content TEXT NOT NULL,
                     MimeType TEXT NOT NULL
                     );*/
---INSERT INTO Files (UserID, "Filename", "Content") values (1,'test.txt','ABCD');              
---SELECT F.*,U."Username" FROM Files AS F JOIN Users AS U ON F."UserID"=U.ID;
---SELECT F.*,U."Username" FROM Files AS F JOIN Users AS U ON F.UserID=U.ID WHERE U.ID=21
 
---SELECT F.*, U."Username" FROM "Files" AS F join Users AS U ON U.ID = F."UserID"
 
 /*CREATE TABLE UserFiles (ID INTEGER PRIMARY KEY AUTOINCREMENT, 
                         UserID INTEGER NOT NULL,
@@ -46,22 +49,7 @@
                         Owner INTEGER NOT NULL,
                         FOREIGN KEY(UserID) REFERENCES Users(ID),
                         FOREIGN KEY(FileID) REFERENCES Files(ID)
-                        );*/                 
-/*SELECT F.* FROM UserFiles AS UF JOIN Users AS U ON UF.UserID = U.ID JOIN Files AS F ON F.ID = UF.FileID
-WHERE U.ID = 0 AND UF.Owner = 1*/
-
---INSERT INTO UserFiles (UserID, FileID, Owner) VALUES(28,8,0)
-
-/*SELECT * FROM "UserFiles" WHERE ID = (SELECT UF.ID FROM UserFiles AS UF JOIN Files AS F ON F.ID = UF.FileID
-														JOIN Users AS U ON U.ID = UF.UserID WHERE F.ID = 10 AND U.Username = 'test123'
-														AND Owner = 0);*/
-
-DELETE FROM Files;
-
-SELECT * FROM Users;
-SELECT * FROM UserFiles;
-SELECT ID, Filename, MimeType FROM Files;
-vacuum]]></console>
+                        );*/]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
