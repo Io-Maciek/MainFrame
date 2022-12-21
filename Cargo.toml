@@ -20,6 +20,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.87"
 rocket_dyn_templates = { version = "0.1.0-rc.2", features = ["handlebars"] }
 rocket-include-static-resources = "0.10.3"
+chrono = "0.4.23"
 #paste = "1.0.9"
 
 

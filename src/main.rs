@@ -37,6 +37,7 @@ mod user_maker;
 mod file;
 mod hbs_helpers;
 mod users_files;
+mod logs;
 
 #[derive(Serialize)]
 struct Message<'a> {
@@ -260,13 +261,18 @@ async fn index_post(jar: &CookieJar<'_>, mut db: Connection<SQL>, maker_user: Fo
 }
 
 #[post("/login", data = "<maker_user>")]
-async fn index_login(mut db: Connection<SQL>, jar: &CookieJar<'_>, maker_user: Form<UserMaker<'_>>) -> Result<Redirect, Flash<Redirect>> {
+async fn index_login<'a>(mut db: Connection<SQL>, jar: &CookieJar<'_>, maker_user: Form<UserMaker<'_>>, logs: &'a State<Log>) -> Result<Redirect, Flash<Redirect>> {
+	let username_log = &maker_user.uname.clone();
 	match maker_user.into_inner().check_user_login(&mut *db).await {
 		Ok(mut user) => {
 			user.create_new_session(&mut *db, jar).await;
+			logs.register(vec![username_log,"OK"]);
 			Ok(Redirect::to(uri!(index)))
 		}
-		Err(err) => Err(Flash::error(Redirect::to(uri!(index)), err))
+		Err(err) => {
+			logs.register(vec![username_log,&err]);
+			Err(Flash::error(Redirect::to(uri!(index)), err))
+		}
 	}
 }
 
@@ -277,6 +283,7 @@ async fn index_logout(mut db: Connection<SQL>, jar: &CookieJar<'_>) -> Redirect 
 }
 
 use std::ops::Deref;
+use crate::logs::Log;
 use crate::users_files::UserFiles;
 
 #[launch]
@@ -299,6 +306,7 @@ fn rocket() -> Rocket<Build> {
 		.attach(Template::custom(|eng| {
 			eng.handlebars.register_helper("mod", Box::new(hbs_helpers::modulo));
 		}))
+		.manage(Log::new())
 }
 
 
