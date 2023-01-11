@@ -29,7 +29,7 @@
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
     <connection id="8836a11b-9ff8-461d-b4ef-55eaebaebcdd">
-      <console name="Connection" type="STANDARD" schema="main" session="Main"><![CDATA[/*CREATE TABLE Users(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+      <console name="Connection" type="STANDARD" schema="main" session="Main">/*CREATE TABLE Users(ID INTEGER PRIMARY KEY AUTOINCREMENT,
                     Username TEXT NOT NULL UNIQUE,
                     Hash TEXT NOT NULL,
                     Salt TEXT NOT NULL,
@@ -52,8 +52,11 @@
                         );*/
 
 --SELECT sql from sqlite_schema WHERE name ='Users'
-SELECT sql FROM sqlite_schema]]></console>
+SELECT sql FROM sqlite_schema</console>
     </connection>
+  </component>
+  <component name="DBNavigator.Project.DatabaseEditorStateManager">
+    <last-used-providers />
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
     <open-files />

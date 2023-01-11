@@ -301,8 +301,10 @@ fn rocket() -> Rocket<Build> {
 		.attach(SQL::init())
 		.attach(static_resources_initializer!(
 			"favicon" => "img/favicon.png",
+			"font-awesome" => "img/font-awesome.min.css"
 		))
-		.mount("/", routes![delete_sharing, add_new_sharing_user, favicon, index, index_post,index_login,index_logout,get_file_by_id,send_file,delete_file,change_filename])
+		.mount("/", routes![font_awesome,delete_sharing, add_new_sharing_user, favicon,
+			index, index_post,index_login,index_logout,get_file_by_id,send_file,delete_file,change_filename])
 		.attach(Template::custom(|eng| {
 			eng.handlebars.register_helper("mod", Box::new(hbs_helpers::modulo));
 		}))
@@ -312,4 +314,5 @@ fn rocket() -> Rocket<Build> {
 
 static_response_handler! {
     "/favicon.png" => favicon => "favicon",
+	"/font-awesome.css" => font_awesome => "font-awesome",
 }

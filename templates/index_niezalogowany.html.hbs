@@ -7,7 +7,14 @@
         </div>
         <div class="mb-3">
             <label for="pwd" class="form-label">Hasło</label>
-            <input class="form-control" type='password' id='pwd' name='pwd'>
+            <div class="input-group mb-3">
+                <input class="form-control" type='password' id='pwd1' name='pwd'>
+                <div class="input-group-append">
+                    <a onclick="click1()" onmouseover="hover1()" onmouseleave="hover_end1()" style="text-decoration: none" href="#">
+                        <span class="input-group-text" id="basic-addon2" aria-hidden="true">👁</span>
+                    </a>
+                </div>
+            </div>
         </div>
         <button class='btn btn-success' type='submit'>Zarejestruj</button>
     </form>
@@ -25,7 +32,14 @@
         </div>
         <div class="mb-3">
             <label for="pwd" class="form-label">Hasło</label>
-            <input class="form-control" type='password' id='pwd' name='pwd'>
+            <div class="input-group mb-3">
+                <input class="form-control" type='password' id='pwd2' name='pwd'>
+                <div class="input-group-append">
+                    <a onclick="click2()" onmouseover="hover2()" onmouseleave="hover_end2()" style="text-decoration: none" href="#">
+                        <span class="input-group-text" id="basic-addon2" aria-hidden="true">👁</span>
+                    </a>
+                </div>
+            </div>
         </div>
         <button class='btn btn-success' type='submit'>Zaloguj się</button>
     </form>
@@ -34,5 +48,43 @@
             <span class="badge bg-{{ msg_login.html_color }}">{{ msg_login.message }}</span>
         </h6>
     {{/if}}
+
+    <script>
+        function click1(){
+            let type = document.getElementById("pwd1").type;
+            if (type == "text"){
+            document.getElementById("pwd1").type = "password";
+            }else{
+            document.getElementById("pwd1").type = "text";
+            }
+        }
+
+        function hover1(){
+            document.getElementById("pwd1").type = "text";
+        }
+
+        function hover_end1(){
+            document.getElementById("pwd1").type = "password";
+        }
+
+        function click2(){
+            let type = document.getElementById("pwd2").type;
+            if (type == "text"){
+            document.getElementById("pwd1").type = "password";
+            }else{
+            document.getElementById("pwd1").type = "text";
+            }
+        }
+
+        function hover2(){
+            document.getElementById("pwd2").type = "text";
+        }
+
+        function hover_end2(){
+            document.getElementById("pwd2").type = "password";
+        }
+    </script>
+
+
 {{/inline}}
 {{> layout}}
