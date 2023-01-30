@@ -43,5 +43,5 @@ CREATE TABLE UserFiles (ID INTEGER PRIMARY KEY AUTOINCREMENT,
 
 &nbsp;&nbsp;&nbsp;&nbsp;**UserFiles** przechowuje informację dotyczące praw do danego pliku poprzez samo ID pliku i użytkownika oraz zmienną Owner, przyjmującą wartości 0 i 1.
 
-#### Poprzednik
+## Poprzednik
 Projekt *MainFrame* to sukcesor starego projektu [*Czytadło*](https://github.com/Io-Maciek/Czytadlo) napisanego w roku 2020 w języku PHP.
