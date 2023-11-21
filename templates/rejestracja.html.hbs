@@ -1,27 +1,31 @@
 {{#*inline "page"}}
-    <h4>Zaloguj sie</h4>
-    <form action="/login" method="POST">
+    <h4>Zarejestruj się</h4>
+    <form action="/register" method="POST">
         <div class="mb-3">
             <label for="uname" class="form-label">Nazwa użytkownika</label>
-            <input class="form-control" type='text' id='uname' name='uname'>
+            <input class="form-control" type='text' id='uname' name='uname'
+
+                {{#if message.optional}}
+                   value="{{{message.optional}}}"
+                {{/if}}
+            >
         </div>
         <div class="mb-3">
             <label for="pwd" class="form-label">Hasło</label>
             <div class="input-group mb-3">
-                <input class="form-control" type='password' id='pwd2' name='pwd'>
+                <input class="form-control" type='password' id='pwd1' name='pwd'>
                 <div class="input-group-append">
-                    <a onclick="click2()" onmouseover="hover2()" onmouseleave="hover_end2()" style="text-decoration: none" href="#">
+                    <a onclick="click1()" onmouseover="hover1()" onmouseleave="hover_end1()" style="text-decoration: none" href="#">
                         <span class="input-group-text" id="basic-addon2" aria-hidden="true">👁</span>
                     </a>
                 </div>
             </div>
         </div>
-        <button class='btn btn-success' type='submit'>Zaloguj się</button>
-        <a href="/register" style="color: white" class='btn btn-primary'>Stwórz konto</a>
+        <button class='btn btn-success' type='submit'>Zarejestruj</button>
     </form>
-    {{#if msg_login}}
+    {{#if msg_rej}}
         <h6>
-            <span class="badge bg-{{ msg_login.html_color }}">{{ msg_login.message }}</span>
+            <span class="badge bg-{{ msg_rej.html_color }}">{{ msg_rej.message }}</span>
         </h6>
     {{/if}}
 
