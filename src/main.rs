@@ -292,7 +292,7 @@ async fn get_file_by_id(jar: &CookieJar<'_>, mut db: Connection<SQL>, file_id: i
                     //Ok(hex)
                     Ok(RawHtml(
                         format!("
-						<iframe frameborder='0' id='ItemPreview' src='' width='98%' height='98%'></iframe>
+						<iframe frameborder='0' id='ItemPreview'></iframe>
 						<script>
 							document.getElementById('ItemPreview').src = 'data:{};base64,{}';
 						</script>
