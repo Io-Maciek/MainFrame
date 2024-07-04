@@ -132,10 +132,10 @@
                         <div class="row justify-content-evenly">
                             <div class="col-8">
                                 <h5>
-                                    <a id="li_a" style="color:black;"
+                                    <span id="li_a" style="color:black;cursor: pointer"
                                        class="badge badge-{{#mod @index 2}}success{{else}}primary{{/mod}}"
                                        target="_blank"
-                                       href="/get/{{ this.id }}/{{this.Filename}}"> {{ this.Filename }}</a>
+                                       onclick="openmodal('/get/{{ this.id }}/{{this.Filename}}', '{{ this.Filename }}')"> {{ this.Filename }}</span>
                                 </h5>
                             </div>
                             <div class="col-4">
@@ -203,6 +203,13 @@
     {{/if}}
 
 
+    <div id="myModal" class="modal">
+        <span onclick="closemodal()" class="close">&times;</span>
+        <iframe class="modal-content" id="img01"></iframe>
+        <div id="caption"></div>
+    </div>
+
+
 
     <section id="addtitionalSection">
         <script>
@@ -210,11 +217,118 @@
                 let filename = document.getElementById("myfile").files[0].name;
                 document.getElementById('lblMyFile').innerHTML = filename;
             }
+
+            function openmodal(url, name){
+                console.log(url);
+                console.log(name);
+
+                var modal = document.getElementById("myModal");
+                modal.style.display = "block";
+
+                var modalImg = document.getElementById("img01");
+                modalImg.src = url;
+
+                var captionText = document.getElementById("caption");
+                captionText.innerHTML = name;
+            }
+
+            function closemodal(){
+                var modal = document.getElementById("myModal");
+                modal.style.display = "none";
+            }
+
         </script>
         <style>
             #myfile ~ #lblMyFile::after {
                 content: "Wyszukaj";
             }
+
+            #myImg {
+  border-radius: 5px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+#myImg:hover {opacity: 0.7;}
+
+/* The Modal (background) */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  padding-top: 100px; /* Location of the box */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(0,0,0); /* Fallback color */
+  background-color: rgba(0,0,0,0.9); /* Black w/ opacity */
+}
+
+/* Modal Content (image) */
+.modal-content {
+  margin: auto;
+  display: block;
+  width: 90%; /* Let it resize based on content */
+  height: 90%; /* Let it resize based on content */
+}
+
+/* Caption of Modal Image */
+#caption {
+  margin: auto;
+  display: block;
+  width: 80%;
+  max-width: 700px;
+  text-align: center;
+  color: #ccc;
+  padding: 10px 0;
+  height: 150px;
+}
+
+/* Add Animation */
+.modal-content, #caption {
+  -webkit-animation-name: zoom;
+  -webkit-animation-duration: 0.6s;
+  animation-name: zoom;
+  animation-duration: 0.6s;
+}
+
+@-webkit-keyframes zoom {
+  from {-webkit-transform:scale(0)}
+  to {-webkit-transform:scale(1)}
+}
+
+@keyframes zoom {
+  from {transform:scale(0)}
+  to {transform:scale(1)}
+}
+
+/* The Close Button */
+.close {
+  position: absolute;
+  top: 15px;
+  right: 35px;
+  color: #f1f1f1;
+  font-size: 40px;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+.close:hover,
+.close:focus {
+  color: #bbb;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* 100% Image Width on Smaller Screens */
+@media only screen and (max-width: 700px){
+  .modal-content {
+    width: 100%;
+  }
+}
         </style>
     </section>
 

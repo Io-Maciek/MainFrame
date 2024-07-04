@@ -222,7 +222,7 @@ async fn send_file(jar: &CookieJar<'_>, mut db: Connection<SQL>, content_type: &
         Some(user) => {
             let options = MultipartFormDataOptions::with_multipart_form_data_fields(
                 vec![
-                    MultipartFormDataField::file("myfile").size_limit(10_000_000).content_type_by_string(Some(mime::STAR_STAR)).unwrap(),//10MB
+                    MultipartFormDataField::file("myfile").size_limit(100_000_000).content_type_by_string(Some(mime::STAR_STAR)).unwrap(),//100MB
                 ]
             );
 
@@ -292,10 +292,23 @@ async fn get_file_by_id(jar: &CookieJar<'_>, mut db: Connection<SQL>, file_id: i
                     //Ok(hex)
                     Ok(RawHtml(
                         format!("
-						<iframe frameborder='0' id='ItemPreview' src='' width='98%' height='98%'></iframe>
+                        <!DOCTYPE html>
+                        <html lang='en'>
+                        <head>
+                            <meta charset='UTF-8'>
+                            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                            <title>Iframe Content</title>
+                            <style type='text/css'>
+                                body, html {{margin: 0;padding: 0;width: 100%;height: 100%;overflow: hidden;}}
+                            </style>
+                        </head>
+                        <body style='width:100%; height: 100%'>
+						<iframe frameborder='0' id='ItemPreview' src='' style='width:100%; height: 100%'></iframe>
 						<script>
 							document.getElementById('ItemPreview').src = 'data:{};base64,{}';
 						</script>
+                        </body>
+                        </html>
 						", file.MimeType.unwrap(), base64::encode(&hex))
                     ))
                 }

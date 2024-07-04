@@ -12,7 +12,7 @@ use ring::rand::SecureRandom;
 use rocket::http::{Cookie, CookieJar};
 use crate::user_maker::UserMaker;
 use sqlx::pool::PoolConnection;
-use sqlx::{Error, Mssql, Sqlite};
+use sqlx::{Error, Sqlite}; // Mssql
 use rocket::serde::Serialize;
 
 //pub struct User<Sqlite>{

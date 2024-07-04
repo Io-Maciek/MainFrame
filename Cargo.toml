@@ -5,10 +5,17 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[build-dependencies]
+syn = "1"
+
+[dependencies.rocket_db_pools]
+version = "0.1.0-rc.3"
+features = ["sqlx_sqlite", "sqlx_mysql"]
+#features = ["sqlx_sqlite", "sqlx_mssql","sqlx_mysql"]
+
 [dependencies]
-rocket = { version = "0.5.0-rc.2", features = ["secrets"] }
-rocket_db_pools = { version = "0.1.0-rc.2", features = ["sqlx_sqlite", "sqlx_mssql","sqlx_mysql"] }
-sqlx = "0.5.13"
+rocket = { version = "0.5.0-rc.3", features = ["secrets"] }
+sqlx = {version = "0.6.3", features = ["sqlite"]}#, features = ["runtime-async-std", "sqlite", "mssql"]}
 async-trait = "0.1.57"
 data-encoding = "2.3.2"
 rand = "0.8.5"
@@ -22,10 +29,3 @@ rocket_dyn_templates = { version = "0.1.0-rc.2", features = ["handlebars"] }
 rocket-include-static-resources = "0.10.3"
 chrono = "0.4.23"
 #paste = "1.0.9"
-
-
-
-[build]
-# Pi 0/1
-[target.arm-unknown-linux-gnueabihf]
-linker = "arm-linux-gnueabihf-gcc"

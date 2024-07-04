@@ -2,3 +2,5 @@
 MainFrame.db-shm
 MainFrame.db-wal
 MainFrame.db
+MainFrame.db
+*.csv

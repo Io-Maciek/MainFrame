@@ -3,7 +3,7 @@ use crate::{File, sql_struct, User};
 use crate::sql_traits::{Insertable, Queryable};
 use crate::SQL;
 use rocket_db_pools::Connection;
-use sqlx::{Error, Mssql, Sqlite};
+use sqlx::{Error,  Sqlite}; //Mssql
 use sqlx::pool::PoolConnection;
 use rocket::serde::Serialize;
 
