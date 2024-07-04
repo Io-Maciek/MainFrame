@@ -203,9 +203,27 @@
     {{/if}}
 
 
-    <div id="myModal" class="modal">
+    <div id="myModal" class="modal" style="
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  padding-top: 100px; /* Location of the box */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(0,0,0); /* Fallback color */
+  background-color: rgba(0,0,0,0.9); /* Black w/ opacity */
+">
         <span onclick="closemodal()" class="close">&times;</span>
-        <iframe class="modal-content" id="img01"></iframe>
+        <iframe style="
+  margin: auto;
+  display: block;
+  width: 90%; /* Let it resize based on content */
+  height: 90%; /* Let it resize based on content */
+" class="modal-content" id="img01"></iframe>
         <div id="caption"></div>
     </div>
 
@@ -251,29 +269,6 @@
 
 #myImg:hover {opacity: 0.7;}
 
-/* The Modal (background) */
-.modal {
-  display: none; /* Hidden by default */
-  position: fixed; /* Stay in place */
-  z-index: 1; /* Sit on top */
-  padding-top: 100px; /* Location of the box */
-  left: 0;
-  top: 0;
-  width: 100%; /* Full width */
-  height: 100%; /* Full height */
-
-  overflow: auto; /* Enable scroll if needed */
-  background-color: rgb(0,0,0); /* Fallback color */
-  background-color: rgba(0,0,0,0.9); /* Black w/ opacity */
-}
-
-/* Modal Content (image) */
-.modal-content {
-  margin: auto;
-  display: block;
-  width: 90%; /* Let it resize based on content */
-  height: 90%; /* Let it resize based on content */
-}
 
 /* Caption of Modal Image */
 #caption {
