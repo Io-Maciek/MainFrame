@@ -101,6 +101,7 @@
                 document.getElementById("aModalHref").href = "/change_filename/"+new_filename+"/"+id;
             }
 
+
         </script>
     </div>
 
@@ -114,14 +115,16 @@
                            class="custom-file-input">
                     <label id="lblMyFile" class="custom-file-label" for="myfile">Wybierz plik</label>
 
-                    <div class="progress">
-                        <div id="progressBar1" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div id="mainProgressDiv" style="display: none;" class="progress">
+                        <div id="progressBar1" class="progress-bar" role="progressbar" style="width: 0%;"
+                             aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
 
                 </div>
             </div>
             <div class="col-2">
-                <button id="fileSubmitButton" class='btn btn-success mb-2 float-right' type='submit' disabled>Wyślij</button>
+                <button id="fileSubmitButton" class='btn btn-success mb-2 float-right' type='submit' disabled>Wyślij
+                </button>
             </div>
         </div>
 
@@ -138,9 +141,9 @@
                             <div class="col-8">
                                 <h5>
                                     <span id="li_a" style="color:black;cursor: pointer"
-                                       class="badge badge-{{#mod @index 2}}success{{else}}primary{{/mod}}"
-                                       target="_blank"
-                                       onclick="openmodal('/get/{{ this.id }}/{{this.Filename}}', '{{ this.Filename }}')"> {{ this.Filename }}</span>
+                                          class="badge badge-{{#mod @index 2}}success{{else}}primary{{/mod}}"
+                                          target="_blank"
+                                          onclick="openmodal('/get/{{ this.id }}/{{this.Filename}}', '{{ this.Filename }}')"> {{ this.Filename }}</span>
                                 </h5>
                             </div>
                             <div class="col-4">
@@ -233,7 +236,6 @@
     </div>
 
 
-
     <section id="addtitionalSection">
         <script>
             function inputFileChanged(){
@@ -246,6 +248,7 @@
                 _("progressBar1").style.width = "0%";
                 _("progressBar1").innerHTML = "";
                 _("fileSubmitButton").disabled = true;
+                _("mainProgressDiv").style.display = "block";
 
                 ajax.upload.addEventListener("progress", progressHandler, false);
                 ajax.addEventListener("load", completeHandler, false);
@@ -254,7 +257,6 @@
                 ajax.open("POST", "/plik"); // http://www.developphp.com/video/JavaScript/File-Upload-Progress-Bar-Meter-Tutorial-Ajax-PHP
                 ajax.send(formdata);
             }
-
 
 
             function progressHandler(event) {
@@ -303,6 +305,7 @@
                 var modal = document.getElementById("myModal");
                 modal.style.display = "none";
             }
+
 
         </script>
         <style>
@@ -373,6 +376,7 @@
     width: 100%;
   }
 }
+
         </style>
     </section>
 
