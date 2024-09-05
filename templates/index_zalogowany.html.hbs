@@ -113,10 +113,15 @@
                     <input onchange="inputFileChanged()" type='file' id='myfile' name='myfile'
                            class="custom-file-input">
                     <label id="lblMyFile" class="custom-file-label" for="myfile">Wybierz plik</label>
+
+                    <div class="progress">
+                        <div id="progressBar1" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+
                 </div>
             </div>
             <div class="col-2">
-                <button class='btn btn-success mb-2 float-right' type='submit'>Wyślij</button>
+                <button id="fileSubmitButton" class='btn btn-success mb-2 float-right' type='submit' disabled>Wyślij</button>
             </div>
         </div>
 
@@ -234,6 +239,50 @@
             function inputFileChanged(){
                 let filename = document.getElementById("myfile").files[0].name;
                 document.getElementById('lblMyFile').innerHTML = filename;
+
+                var ajax = new XMLHttpRequest();
+                var formdata = new FormData();
+                formdata.append("lblMyFile", document.getElementById("myfile").files[0]);
+                _("progressBar1").style.width = "0%";
+                _("progressBar1").innerHTML = "";
+                _("fileSubmitButton").disabled = true;
+
+                ajax.upload.addEventListener("progress", progressHandler, false);
+                ajax.addEventListener("load", completeHandler, false);
+                ajax.addEventListener("error", errorHandler, false);
+                ajax.addEventListener("abort", abortHandler, false);
+                ajax.open("POST", "/plik"); // http://www.developphp.com/video/JavaScript/File-Upload-Progress-Bar-Meter-Tutorial-Ajax-PHP
+                ajax.send(formdata);
+            }
+
+
+
+            function progressHandler(event) {
+                var percent = (event.loaded / event.total) * 100;
+                _("progressBar1").innerHTML = Math.round(percent) + "%";
+                var percent = (event.loaded / event.total) * 100;
+                _("progressBar1").style.width = Math.round(percent)+"%";
+                //_("status").innerHTML = Math.round(percent) + "% uploaded... please wait";
+            }
+
+            function completeHandler(event) {
+                //"fileSubmitButton"
+                _("fileSubmitButton").disabled = false;
+
+              //_("status").innerHTML = event.target.responseText;
+              //_("progressBar1").style.width = "0%"; //wil clear progress bar after successful upload
+            }
+
+            function errorHandler(event) {
+              //_("status").innerHTML = "Upload Failed";
+            }
+
+            function abortHandler(event) {
+              //_("status").innerHTML = "Upload Aborted";
+            }
+
+            function _(el) {
+              return document.getElementById(el);
             }
 
             function openmodal(url, name){
