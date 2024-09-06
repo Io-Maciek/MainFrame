@@ -102,6 +102,7 @@
             }
 
 
+
         </script>
     </div>
 
@@ -235,8 +236,7 @@
         <div id="caption"></div>
     </div>
 
-
-    <section id="addtitionalSection">
+    <section id="scriptFileUploadSection">
         <script>
             function inputFileChanged(){
                 let filename = document.getElementById("myfile").files[0].name;
@@ -287,6 +287,11 @@
               return document.getElementById(el);
             }
 
+        </script>
+    </section>
+
+    <section id="modalScriptAndStyleSection">
+        <script>
             function openmodal(url, name){
                 console.log(url);
                 console.log(name);
@@ -305,7 +310,6 @@
                 var modal = document.getElementById("myModal");
                 modal.style.display = "none";
             }
-
 
         </script>
         <style>
@@ -376,7 +380,6 @@
     width: 100%;
   }
 }
-
         </style>
     </section>
 
