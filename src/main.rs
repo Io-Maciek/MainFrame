@@ -96,7 +96,7 @@ async fn register_new(
                 },
             ))
         }
-        Some(user) => {
+        Some(_) => {
             /*
             //
                 GŁÓWNA STRONA DLA ZALOGOWANYCH
@@ -116,7 +116,6 @@ struct MessageErrorWithNick {
 
 #[post("/register", data = "<maker_user>")]
 async fn register_new_post(
-    jar: &CookieJar<'_>,
     mut db: Connection<SQL>,
     maker_user: Form<UserMaker<'_>>,
 ) -> Flash<Redirect> {
@@ -127,7 +126,7 @@ async fn register_new_post(
                 Redirect::to(uri!(index)),
                 format!(
                     " Pomyślnie utworzono użytkownika <strong>{}</strong>",
-                    u.Username
+                    u.username
                 ),
             ),
             Err(_) => Flash::error(
@@ -211,7 +210,7 @@ async fn delete_sharing(
             None => Flash::error(Redirect::to(uri!(index)), "Należy się zalogować!"),
             Some(owner) => match UserFiles::get_from_user_and_file(&mut *db, &owner, &file).await {
                 Ok(uf_owner) => {
-                    if uf_owner.Owner == true {
+                    if uf_owner.owner == true {
                         let q = format!(
                             r"DELETE FROM UserFiles WHERE ID = (SELECT UF.ID FROM UserFiles AS UF JOIN Files AS F ON F.ID = UF.FileID
 														JOIN Users AS U ON U.ID = UF.UserID WHERE F.ID = {} AND U.Username = '{}'
@@ -221,7 +220,7 @@ async fn delete_sharing(
                         match sqlx::query_as::<_, UserFiles>(&q).fetch_optional(db.as_mut()).await {
                                     Ok(k) => {
                                         Flash::success(Redirect::to(uri!(index)),
-                                                       format!("Przestano udostępniać plik <strong>{}</strong> użytkownikowi <strong>{}</strong>", file.Filename, username))
+                                                       format!("Przestano udostępniać plik <strong>{}</strong> użytkownikowi <strong>{}</strong>", file.filename, username))
                                     }
                                     Err(er) => Flash::error(Redirect::to(uri!(index)), format!("ERR: {:?}", er))
                                 }
@@ -230,7 +229,7 @@ async fn delete_sharing(
                             Redirect::to(uri!(index)),
                             format!(
                                 "Nie jesteś właścicielem pliku <strong>{}</strong>!",
-                                file.Filename
+                                file.filename
                             ),
                         )
                     }
@@ -253,7 +252,7 @@ async fn add_new_sharing_user(
         None => Flash::error(Redirect::to(uri!(index)), "Należy się zalogować!"),
         Some(user_owner) => {
             let f = File::get_one(&mut *db, file_id).await.unwrap();
-            let filename = &f.Filename;
+            let filename = &f.filename;
             match UserFiles::add_shared_user(&mut *db, &user_owner, &f, username.clone()).await {
                 Ok(_) => Flash::success(
                     Redirect::to(uri!(index)),
@@ -378,7 +377,7 @@ async fn get_file_by_id(
                 )), //nie znaleziono pliku
                 Some(file) => {
                     //plik jest
-                    let bytes = file.Content.as_bytes();
+                    let bytes = file.content.as_bytes();
                     let hex = HEXUPPER.decode(bytes).unwrap();
                     //Ok(hex)
                     Ok(RawHtml(
@@ -400,7 +399,7 @@ async fn get_file_by_id(
 						</script>
                         </body>
                         </html>
-						", file.MimeType.unwrap(), base64::encode(&hex))
+						", file.mime_type.unwrap(), base64::encode(&hex))
                     ))
                 }
             }

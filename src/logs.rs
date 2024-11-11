@@ -12,7 +12,7 @@ impl Log{
 	pub fn new()->Log{
 		let now = Local::now();
 		let form = format!("Log{}-{}-{}+{}_{}_{}.csv", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
-		std::fs::File::create(&form);
+		let _ = std::fs::File::create(&form);
 		let f = Log{
 			filename: form
 		};
@@ -28,13 +28,13 @@ impl Log{
 
 	pub fn append(&self, text: Vec<&str>){
 		let mut file  = OpenOptions::new().create(true).write(true).append(true).open(self.filename.clone()).unwrap();
-		writeln!(file,"{}", text.join(","));
+		let _ = writeln!(file,"{}", text.join(","));
 	}
 
 	pub fn register(&self, text: Vec<&str>){
 		let now = Local::now();
 		let h = format!("{}:{}:{}", now.hour(), now.minute(), now.second());
 		let mut file  = OpenOptions::new().create(true).write(true).append(true).open(self.filename.clone()).unwrap();
-		writeln!(file,"{},{}", h,text.join(","));
+		let _ = writeln!(file,"{},{}", h,text.join(","));
 	}
 }

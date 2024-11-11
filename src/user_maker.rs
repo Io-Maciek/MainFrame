@@ -59,7 +59,7 @@ impl UserMaker<'_>{
 				if self==u{
 					Ok(u)
 				}else{
-					Err(format!("Podano nieprawidłowe hasło dla użytkownika <strong>{}</strong>", u.Username))
+					Err(format!("Podano nieprawidłowe hasło dla użytkownika <strong>{}</strong>", u.username))
 				}
 			}
 		}
@@ -75,13 +75,13 @@ impl PartialEq<User> for UserMaker<'_> {
 		pbkdf2::derive(
 			pbkdf2::PBKDF2_HMAC_SHA512,
 			n_iter,
-			HEXUPPER.decode(&other.Salt.as_bytes()).unwrap().as_slice(),
+			HEXUPPER.decode(&other.salt.as_bytes()).unwrap().as_slice(),
 			&self.pwd.as_bytes(),
 			&mut pbkdf2_hash,
 		);
 
 
-		match &other.Hash.eq(&HEXUPPER.encode(&pbkdf2_hash)) {
+		match &other.hash.eq(&HEXUPPER.encode(&pbkdf2_hash)) {
 			true => true,
 			false => false,
 		}

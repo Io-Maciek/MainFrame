@@ -122,14 +122,14 @@ macro_rules! sql_struct {
 
 				let sql_str = stringify!($sql);
 				if sql_str.eq("Sqlite"){
-					Ok(format!(r"INSERT INTO {} ({}) VALUES ({}) RETURNING *",$table,self.get_fields().connect(", "),
-					args.connect(","))
+					Ok(format!(r"INSERT INTO {} ({}) VALUES ({}) RETURNING *",$table,self.get_fields().join(", "),
+					args.join(","))
 				)
 				}else if sql_str.eq("Mssql"){
-					Ok(format!("INSERT INTO {} OUTPUT inserted.* VALUES ({})",$table, args.connect(",")))
+					Ok(format!("INSERT INTO {} OUTPUT inserted.* VALUES ({})",$table, args.join(",")))
 				}else{
 					panic!("{}",format!("Database pool '{}' is not yet implemented", sql_str));
-					Err(format!("Database pool '{}' is not yet implemented", sql_str))
+					//Err(format!("Database pool '{}' is not yet implemented", sql_str))
 				}
 			}
 
@@ -142,15 +142,15 @@ macro_rules! sql_struct {
 
 				let sql_str = stringify!($sql);
 				if sql_str.eq("Sqlite"){
-					Ok(format!("UPDATE {} SET {} WHERE {} = {} RETURNING *",$table,args.connect(", "), $id_name,
+					Ok(format!("UPDATE {} SET {} WHERE {} = {} RETURNING *",$table,args.join(", "), $id_name,
 						&self.sql_types_string(Fields::id)))
 
 				}else if sql_str.eq("Mssql"){
-					Ok(format!("UPDATE {} SET {} OUTPUT inserted.* WHERE {}={}",$table,args.connect(", "), $id_name,
+					Ok(format!("UPDATE {} SET {} OUTPUT inserted.* WHERE {}={}",$table,args.join(", "), $id_name,
 					&self.sql_types_string(Fields::id)))
 				}else{
 					panic!("{}",format!("Database pool '{}' is not yet implemented", sql_str));
-					Err(format!("Database pool '{}' is not yet implemented", sql_str))
+					//Err(format!("Database pool '{}' is not yet implemented", sql_str))
 				}
 			}
 

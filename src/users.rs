@@ -21,10 +21,10 @@ sql_struct!(
 	ID("ID")
 	pub struct User<Sqlite>{
 		i32,
-		pub Username:String,
-		pub Hash:String,
-		pub Salt:String,
-		SessionID:Option<String>
+		pub username:String,
+		pub hash:String,
+		pub salt:String,
+		session_id:Option<String>
 	}
 );
 
@@ -38,11 +38,11 @@ impl Insertable<Fields> for User{
 	fn sql_types_string(&self, field: Fields) -> String {
 		match field{
 			Fields::id => self.id.to_string(),
-			Fields::Username => format!("'{}'",self.Username),
-			Fields::Hash => format!("'{}'",self.Hash),
-			Fields::Salt => format!("'{}'",self.Salt),
-			Fields::SessionID => {
-				match self.SessionID.as_ref() {
+			Fields::username => format!("'{}'",self.username),
+			Fields::hash => format!("'{}'",self.hash),
+			Fields::salt => format!("'{}'",self.salt),
+			Fields::session_id => {
+				match self.session_id.as_ref() {
 					None => "NULL".to_string(),
 					Some(sess) => format!("'{}'", sess)
 				}
@@ -53,7 +53,7 @@ impl Insertable<Fields> for User{
 
 impl Display for User {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-		write!(f, "{}", &self.Username)
+		write!(f, "{}", &self.username)
 	}
 }
 
@@ -72,8 +72,8 @@ impl User {
 		rng.fill(&mut s).unwrap();
 		let encoded_session = HEXUPPER.encode(&s);
 
-		self.SessionID = Some(encoded_session.clone());
-		self.update(db).await;
+		self.session_id = Some(encoded_session.clone());
+		let _ = self.update(db).await;
 
 		jar.add(Cookie::build("session_id").http_only(true).finish());
 	}
@@ -95,8 +95,8 @@ impl User {
 			None => {}
 			Some(sess_id_jar) => {
 				if let Some(mut user) = User::get_from_cookies(&mut *db, jar).await {
-					user.SessionID = None;
-					user.update(&mut *db).await;
+					user.session_id = None;
+					let _ = user.update(&mut *db).await;
 				}
 				jar.remove(sess_id_jar.clone());
 			}
