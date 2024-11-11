@@ -1,18 +1,13 @@
-use std::collections::HashMap;
-use std::fmt::{Display, Formatter, write};
+use std::fmt::{Display, Formatter};
 use crate::{File, sql_struct, UserFiles};
 use crate::sql_traits::{Insertable, Queryable};
 use crate::SQL;
 use rocket_db_pools::Connection;
 use data_encoding::HEXUPPER;
-use std::num::NonZeroU32;
-use ring::{digest, pbkdf2, rand};
-use ring::error::Unspecified;
 use ring::rand::SecureRandom;
 use rocket::http::{Cookie, CookieJar};
-use crate::user_maker::UserMaker;
 use sqlx::pool::PoolConnection;
-use sqlx::{Error, Sqlite}; // Mssql
+use sqlx::{Sqlite}; // Mssql
 use rocket::serde::Serialize;
 
 //pub struct User<Sqlite>{
@@ -30,14 +25,14 @@ sql_struct!(
 
 impl PartialEq<User> for User{
 	fn eq(&self, other: &User) -> bool {
-		other.id == self.id
+		other.Id == self.Id
 	}
 }
 
 impl Insertable<Fields> for User{
 	fn sql_types_string(&self, field: Fields) -> String {
 		match field{
-			Fields::id => self.id.to_string(),
+			Fields::Id => self.Id.to_string(),
 			Fields::username => format!("'{}'",self.username),
 			Fields::hash => format!("'{}'",self.hash),
 			Fields::salt => format!("'{}'",self.salt),
@@ -75,7 +70,7 @@ impl User {
 		self.session_id = Some(encoded_session.clone());
 		let _ = self.update(db).await;
 
-		jar.add(Cookie::build("session_id").http_only(true).finish());
+		jar.add(Cookie::build("session_id").http_only(true).build());
 	}
 
 	pub async fn get_from_cookies(db: &mut PoolConnection<Sqlite>, jar: &CookieJar<'_>) -> Option<User> {

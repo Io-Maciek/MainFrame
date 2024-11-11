@@ -2,12 +2,9 @@ use crate::users::User;
 use data_encoding::HEXUPPER;
 use std::num::NonZeroU32;
 use ring::rand::SecureRandom;
-use ring::{digest, pbkdf2, rand};
-use ring::error::Unspecified;
-use rocket::form::Form;
-use rocket_db_pools::Connection;
-use sqlx::{Sqlite }; //Mssql
-use crate::{PoolConnection, SQL};
+use ring::{digest, pbkdf2};
+use sqlx::{Sqlite}; //Mssql
+use crate::{PoolConnection};
 
 #[derive(FromForm, Clone, Debug)]
 pub struct UserMaker<'a>{
@@ -50,13 +47,13 @@ impl UserMaker<'_>{
 		Ok(User::new(self.uname.to_owned(),HEXUPPER.encode(&pbkdf2_hash),HEXUPPER.encode(&s),None))
 	}
 
-	pub async fn check_user_login(self,db : &mut PoolConnection<Sqlite>)->Result<User, String>{
+	pub async fn check_user_login(&self, db : &mut PoolConnection<Sqlite>)->Result<User, String>{
 		let user_check = sqlx::query_as::<_, User>(&format!("SELECT * FROM Users WHERE Username='{}'",&self.uname))
 			.fetch_one(db.as_mut()).await.ok();
 		match user_check{
 			None => Err(format!("Użytkownik o nicku <strong>{}</strong> nie istnieje",&self.uname)),
 			Some(u) => {
-				if self==u{
+				if self==&u{
 					Ok(u)
 				}else{
 					Err(format!("Podano nieprawidłowe hasło dla użytkownika <strong>{}</strong>", u.username))

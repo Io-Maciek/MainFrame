@@ -2,7 +2,6 @@ use std::fs::OpenOptions;
 use chrono::prelude::*;
 use chrono::{Datelike, Timelike};
 use std::io::Write;
-use std::path::Path;
 
 pub struct Log{
 	filename: String

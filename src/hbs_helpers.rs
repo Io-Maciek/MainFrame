@@ -1,6 +1,5 @@
-use rocket_dyn_templates::handlebars::{Context, Handlebars, handlebars_helper, Helper, Output, Renderable, RenderContext};
-use serde_json::Value;
-use crate::handlebars::{HelperResult, RenderError};
+use rocket_dyn_templates::handlebars::{Context, Handlebars, Helper, Output, RenderContext};
+use crate::handlebars::{HelperResult};
 use crate::handlebars::template::TemplateElement;
 
 

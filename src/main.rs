@@ -1,3 +1,7 @@
+#![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
+#![allow(dead_code)]
+
 use crate::file::File;
 use crate::sql_connectivity::SQL;
 use crate::sql_traits::Queryable;
@@ -19,6 +23,7 @@ use rocket_multipart_form_data::{
     mime, MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
 };
 use sqlx::pool::PoolConnection;
+use base64::prelude::*;
 
 #[macro_use]
 extern crate rocket;
@@ -109,10 +114,6 @@ async fn register_new(
     }
 }
 
-struct MessageErrorWithNick {
-    message: String,
-    nick: String,
-}
 
 #[post("/register", data = "<maker_user>")]
 async fn register_new_post(
@@ -179,7 +180,7 @@ async fn index(
                 let d = UserFiles::get_from_user_and_file(&mut *db, &user, f)
                     .await
                     .unwrap();
-                let mut t = d.sharing_users_of_file(&mut *db).await.unwrap();
+                let t = d.sharing_users_of_file(&mut *db).await.unwrap();
                 sharing_info.push(t);
             }
 
@@ -210,7 +211,7 @@ async fn delete_sharing(
             None => Flash::error(Redirect::to(uri!(index)), "Należy się zalogować!"),
             Some(owner) => match UserFiles::get_from_user_and_file(&mut *db, &owner, &file).await {
                 Ok(uf_owner) => {
-                    if uf_owner.owner == true {
+                    if uf_owner.is_owner == true {
                         let q = format!(
                             r"DELETE FROM UserFiles WHERE ID = (SELECT UF.ID FROM UserFiles AS UF JOIN Files AS F ON F.ID = UF.FileID
 														JOIN Users AS U ON U.ID = UF.UserID WHERE F.ID = {} AND U.Username = '{}'
@@ -218,7 +219,7 @@ async fn delete_sharing(
                             file_id, username
                         );
                         match sqlx::query_as::<_, UserFiles>(&q).fetch_optional(db.as_mut()).await {
-                                    Ok(k) => {
+                                    Ok(_) => {
                                         Flash::success(Redirect::to(uri!(index)),
                                                        format!("Przestano udostępniać plik <strong>{}</strong> użytkownikowi <strong>{}</strong>", file.filename, username))
                                     }
@@ -237,7 +238,7 @@ async fn delete_sharing(
                 Err(err) => Flash::error(Redirect::to(uri!(index)), format!("ERR: {:?}", err)),
             },
         },
-        Err(err) => Flash::error(Redirect::to(uri!(index)), "Plik nie istnieje!"),
+        Err(_) => Flash::error(Redirect::to(uri!(index)), "Plik nie istnieje!"),
     }
 }
 
@@ -312,7 +313,7 @@ async fn send_file(
                         }
                     }
                 },
-                Err(err) => Flash::error(Redirect::to(uri!(index)), "Za duży plik! <i>(10MB)</i>"),
+                Err(_) => Flash::error(Redirect::to(uri!(index)), "Za duży plik! <i>(10MB)</i>"),
             }
         }
     }
@@ -352,12 +353,11 @@ async fn change_filename(
     }
 }
 
-#[get("/get/<file_id>/<file_name>")]
+#[get("/get/<file_id>")]
 async fn get_file_by_id(
     jar: &CookieJar<'_>,
     mut db: Connection<SQL>,
     file_id: i32,
-    file_name: String,
 ) -> Result<RawHtml<String>, Flash<Redirect>> {
     //Result<Vec<u8>, &'a str> {
     //TODO przedstawić to trochę lepiej
@@ -399,7 +399,8 @@ async fn get_file_by_id(
 						</script>
                         </body>
                         </html>
-						", file.mime_type.unwrap(), base64::encode(&hex))
+						", 
+                        file.mime_type.unwrap(), BASE64_STANDARD.encode(&hex))
                     ))
                 }
             }
@@ -414,22 +415,21 @@ async fn index_login<'a>(
     maker_user: Form<UserMaker<'_>>,
     logs: &'a State<Log>,
 ) -> Result<Redirect, Flash<Redirect>> {
-    let username_log = &maker_user.uname.clone();
-    match maker_user.into_inner().check_user_login(&mut *db).await {
+    match maker_user.check_user_login(&mut *db).await {
         Ok(mut user) => {
             user.create_new_session(&mut *db, jar).await;
-            logs.register(vec![username_log, "OK"]);
+            logs.register(vec![maker_user.uname, "OK"]);
             Ok(Redirect::to(uri!(index)))
         }
         Err(err) => {
-            logs.register(vec![username_log, &err]);
+            logs.register(vec![maker_user.uname, &err]);
             Err(Flash::error(Redirect::to(uri!(index)), err))
         }
     }
 }
 
 #[get("/logout")]
-async fn index_logout(mut db: Connection<SQL>, jar: &CookieJar<'_>) -> Redirect {
+async fn index_logout(db: Connection<SQL>, jar: &CookieJar<'_>) -> Redirect {
     User::logout(db, jar).await;
     Redirect::to(uri!(index))
 }

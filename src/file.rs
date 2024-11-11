@@ -1,14 +1,10 @@
-use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use rocket::http::CookieJar;
 use crate::{sql_struct, User};
 use crate::sql_traits::{Insertable, Queryable};
-use crate::SQL;
-use rocket_db_pools::Connection;
-use sqlx::{Error , Sqlite}; //Mssql
+use sqlx::{Sqlite}; //Mssql
 use sqlx::pool::PoolConnection;
 use rocket::serde::Serialize;
-use serde_json::error::Category::Data;
 use crate::users_files::UserFiles;
 
 sql_struct!(
@@ -32,7 +28,7 @@ impl Display for File
 impl Insertable<Fields> for File {
 	fn sql_types_string(&self, field: Fields) -> String {
 		match field {
-			Fields::id => self.id.to_string(),
+			Fields::Id => self.Id.to_string(),
 			Fields::filename => format!("'{}'", self.filename),
 			Fields::content => format!("'{}'", self.content),
 			Fields::mime_type => {
@@ -50,7 +46,7 @@ impl File {
 	pub async fn insert_for_owner(self, db: &mut PoolConnection<Sqlite>, user: &User) -> Result<UserFiles, sqlx::Error> {
 		match self.insert(db).await {
 			Ok(file) => {
-				let user_file = UserFiles::new(user.id, file.id, true);
+				let user_file = UserFiles::new(user.Id, file.Id, true);
 				match user_file.insert(db).await {
 					Ok(uf) => Ok(uf),
 					Err(err0) => Err(err0)
@@ -79,7 +75,7 @@ impl File {
 							Ok(String::from(format!("Wyłączono się z udostępniania pliku <strong>{}</strong>",self.filename)))
 						}
 					},
-					Err(err) => Err(format!("Nie masz dostępu do pliku <strong>{}</strong>",&self.filename))
+					Err(_) => Err(format!("Nie masz dostępu do pliku <strong>{}</strong>",&self.filename))
 				}
 			}
 		}
@@ -91,7 +87,7 @@ impl File {
 			Some(user) => {
 				match UserFiles::get_from_user_and_file(&mut *db, &user, &self).await {
 					Ok(uf) => {
-						if uf.owner == true {
+						if uf.is_owner == true {
 							self.filename = new_filename;
 							let _ = &self.update(db).await;
 							Ok(())
