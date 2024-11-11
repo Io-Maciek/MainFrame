@@ -5,7 +5,7 @@ use crate::handlebars::template::TemplateElement;
 
 
 pub fn modulo(
-	h: &Helper<'_, '_>,
+	h: &Helper<'_>,
 	_: &Handlebars,
 	_: &Context,
 	_: &mut RenderContext<'_, '_>,

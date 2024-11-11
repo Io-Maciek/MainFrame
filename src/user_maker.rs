@@ -52,7 +52,7 @@ impl UserMaker<'_>{
 
 	pub async fn check_user_login(self,db : &mut PoolConnection<Sqlite>)->Result<User, String>{
 		let user_check = sqlx::query_as::<_, User>(&format!("SELECT * FROM Users WHERE Username='{}'",&self.uname))
-			.fetch_one(db).await.ok();
+			.fetch_one(db.as_mut()).await.ok();
 		match user_check{
 			None => Err(format!("Użytkownik o nicku <strong>{}</strong> nie istnieje",&self.uname)),
 			Some(u) => {

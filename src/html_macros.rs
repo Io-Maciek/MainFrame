@@ -160,23 +160,23 @@ macro_rules! sql_struct {
 			async fn get_one(db: &mut PoolConnection<$sql>,id: $id)->Result<$struct, sqlx::Error>{
 				let q = format!("SELECT * FROM {} WHERE {} = {}",$table,$id_name,id);
                 sqlx::query_as::<_, $struct>(q.as_str())
-                	.fetch_one(&mut *db).await
+                	.fetch_one(db.as_mut()).await
 			}
 
 			async fn get_all(db: &mut PoolConnection<$sql>)->Result<Vec<$struct>,sqlx::Error>{
 				let q = format!("SELECT * FROM {}",$table);
                 sqlx::query_as::<_, $struct>(q.as_str())
-                	.fetch_all(db).await
+                	.fetch_all(db.as_mut()).await
 			}
 
 			async fn insert(self,db: &mut PoolConnection<$sql>)->Result<$struct,sqlx::Error>{
 					let q = self.get_insert_string().unwrap();
-					sqlx::query_as::<_,$struct>(q.as_str()).fetch_one(db).await
+					sqlx::query_as::<_,$struct>(q.as_str()).fetch_one(db.as_mut()).await
 			}
 
 			async fn update(&self,db: &mut PoolConnection<$sql>)->Result<(), sqlx::Error>{
 				let q = self.get_update_string().unwrap();
-				match sqlx::query_as::<_,$struct>(q.as_str()).fetch_one(db).await{
+				match sqlx::query_as::<_,$struct>(q.as_str()).fetch_one(db.as_mut()).await{
 					Ok(_)=>Ok(()),
 					Err(err)=>Err(err),
 				}

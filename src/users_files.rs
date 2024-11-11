@@ -37,7 +37,7 @@ impl UserFiles {
 	pub async fn get_from_user_and_file(db: &mut PoolConnection<Sqlite>, user: &User, file: &File) -> Result<UserFiles, sqlx::Error>{
 		let q = format!(r"SELECT UF.* FROM UserFiles AS UF Join Users AS U ON UF.UserID = U.ID
 								JOIN Files AS F ON F.ID = UF.FileID WHERE U.ID = {} AND F.ID = {}",user.id, file.id);
-		sqlx::query_as::<_, UserFiles>(&q).fetch_one(&mut *db).await
+		sqlx::query_as::<_, UserFiles>(&q).fetch_one(db.as_mut()).await
 	}
 
 	pub async fn get_for_user(db: &mut PoolConnection<Sqlite>, user: &User) -> [Vec<File>; 2] {
@@ -46,8 +46,8 @@ impl UserFiles {
 		let q_shared = format!(r"SELECT F.* FROM UserFiles AS UF JOIN Users AS U ON UF.UserID = U.ID JOIN Files AS F ON F.ID = UF.FileID WHERE U.ID = {}
 			AND UF.Owner = 0", user.id);
 
-		let f0 = sqlx::query_as::<_, File>(&q_owner).fetch_all(&mut *db).await.unwrap();
-		let f1 = sqlx::query_as::<_, File>(&q_shared).fetch_all(&mut *db).await.unwrap();
+		let f0 = sqlx::query_as::<_, File>(&q_owner).fetch_all(db.as_mut()).await.unwrap();
+		let f1 = sqlx::query_as::<_, File>(&q_shared).fetch_all(db.as_mut()).await.unwrap();
 		[f0, f1]
 	}
 
@@ -55,13 +55,13 @@ impl UserFiles {
 		let q = format!("SELECT F.* FROM UserFiles AS UF JOIN Users AS U ON UF.UserID = U.ID JOIN Files AS F ON F.ID = UF.FileID WHERE U.ID = {} AND F.ID = {}",
 						user.id, file_id);
 		sqlx::query_as::<_, File>(&q)
-			.fetch_one(db).await.ok()
+			.fetch_one(db.as_mut()).await.ok()
 	}
 
 	pub async fn delete(db: &mut PoolConnection<Sqlite>, user: &User, file: &File) -> Result<bool, String> {
 		let q = format!("SELECT UF.* FROM UserFiles AS UF JOIN Users AS U ON UF.UserID = U.ID JOIN Files AS F ON F.ID = UF.FileID WHERE U.ID = {} AND F.ID = {}",
 						user.id, file.id);
-		match sqlx::query_as::<_, UserFiles>(&q).fetch_one(&mut *db).await {
+		match sqlx::query_as::<_, UserFiles>(&q).fetch_one(db.as_mut()).await {
 			Err(err) => {
 				println!("{:?}", err);
 				Err("Nie masz dostępu do tego pliku".to_string())
@@ -70,10 +70,10 @@ impl UserFiles {
 				match UF.Owner == true {
 					true => {
 						let q_del_mine = format!("DELETE FROM UserFiles WHERE FileID = {}", file.id);
-						let deb = sqlx::query_as::<_, UserFiles>(&q_del_mine).fetch_optional(&mut *db).await;
+						let deb = sqlx::query_as::<_, UserFiles>(&q_del_mine).fetch_optional(db.as_mut()).await;
 						println!("\t{:?}", &deb);
 
-						let deb_file = sqlx::query_as::<_,File>(&format!("DELETE FROM Files WHERE ID={}",file.id)).fetch_all(&mut *db).await;
+						let deb_file = sqlx::query_as::<_,File>(&format!("DELETE FROM Files WHERE ID={}",file.id)).fetch_all(db.as_mut()).await;
 						println!("\t{:?}", &deb_file);
 
 						Ok(true)
@@ -81,7 +81,7 @@ impl UserFiles {
 					false => {
 						println!("Usuwam udostępnienie!");
 						let q_del_share = format!("DELETE FROM UserFiles WHERE ID = {}", UF.id);
-						let deb = sqlx::query_as::<_, UserFiles>(&q_del_share).fetch_optional(&mut *db).await;
+						let deb = sqlx::query_as::<_, UserFiles>(&q_del_share).fetch_optional(db.as_mut()).await;
 						println!("\t{:?}", &deb);
 						Ok(false)
 					}
@@ -93,7 +93,7 @@ impl UserFiles {
 	pub async fn sharing_users_of_file(&self,db: &mut PoolConnection<Sqlite>)->Result<Vec<User>,String>{
 		if self.Owner == true{
 			let q = format!("SELECT * FROM UserFiles as UF JOIN Users AS U ON U.ID = UF.UserID WHERE UF.FileID = {} AND Owner = 0",self.FileID);
-			match sqlx::query_as::<_, User>(&q).fetch_all(&mut *db).await{
+			match sqlx::query_as::<_, User>(&q).fetch_all(db.as_mut()).await{
 				Ok(users) => Ok(users),
 				Err(er) => Err(format!("{:?}",er))
 			}
@@ -109,7 +109,7 @@ impl UserFiles {
 					if uf.Owner == true { // adding as owner is OK
 
 						let q0 = format!("SELECT * FROM Users WHERE Username = '{}'", new_user);
-						match sqlx::query_as::<_, User>(&q0).fetch_one(&mut *db).await {
+						match sqlx::query_as::<_, User>(&q0).fetch_one(db.as_mut()).await {
 							Ok(shared_user) => { // user with provided username exist
 
 								// check if provided user is not already added to this file

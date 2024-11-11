@@ -75,14 +75,14 @@ impl User {
 		self.SessionID = Some(encoded_session.clone());
 		self.update(db).await;
 
-		jar.add(Cookie::build("session_id", encoded_session).http_only(true).finish());
+		jar.add(Cookie::build("session_id").http_only(true).finish());
 	}
 
 	pub async fn get_from_cookies(db: &mut PoolConnection<Sqlite>, jar: &CookieJar<'_>) -> Option<User> {
 		match jar.get("session_id") {
 			None => None,
 			Some(session_id) => {
-				match sqlx::query_as::<_, User>(&format!("SELECT * FROM Users WHERE SessionID='{}'", session_id.value())).fetch_one(&mut *db).await.ok() {
+				match sqlx::query_as::<_, User>(&format!("SELECT * FROM Users WHERE SessionID='{}'", session_id.value())).fetch_one(db.as_mut()).await.ok() {
 					Some(user) => Some(user),
 					None => None
 				}
