@@ -7,6 +7,7 @@ use crate::sql_connectivity::SQL;
 use crate::sql_traits::Queryable;
 use crate::user_maker::UserMaker;
 use crate::users::User;
+use base64::prelude::*;
 use data_encoding::HEXUPPER;
 use rocket::form::Form;
 use rocket::fs::{relative, FileServer};
@@ -23,7 +24,6 @@ use rocket_multipart_form_data::{
     mime, MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
 };
 use sqlx::pool::PoolConnection;
-use base64::prelude::*;
 
 #[macro_use]
 extern crate rocket;
@@ -63,7 +63,7 @@ impl<'a> Message<'a> {
                     optional: None,
                 })
             } else if &fl.0 == "error_w_nick" {
-                println!("asdadasdsadsad");
+                //println!("asdadasdsadsad");
                 let splitted = fl.1.split(";;;").collect::<Vec<&str>>();
                 Some(Message {
                     color: "danger",
@@ -114,32 +114,41 @@ async fn register_new(
     }
 }
 
-
 #[post("/register", data = "<maker_user>")]
-async fn register_new_post(
+async fn register_new_post<'a>(
     mut db: Connection<SQL>,
     maker_user: Form<UserMaker<'_>>,
+    logs: &'a State<Log>,
 ) -> Flash<Redirect> {
     let u = maker_user.uname;
     match maker_user.into_inner().create_user() {
         Ok(user) => match user.insert(&mut *db).await {
-            Ok(u) => Flash::success(
-                Redirect::to(uri!(index)),
-                format!(
-                    " Pomyślnie utworzono użytkownika <strong>{}</strong>",
-                    u.username
-                ),
-            ),
-            Err(_) => Flash::error(
-                Redirect::to(uri!(register_new)),
-                format!("Nick <strong>{}</strong> jest już zajęty!", u),
-            ),
+            Ok(u) => {
+                logs.register(vec![&u.username, "Utworzono użytkownika."]);
+                Flash::success(
+                    Redirect::to(uri!(index)),
+                    format!(
+                        " Pomyślnie utworzono użytkownika <strong>{}</strong>",
+                        u.username
+                    ),
+                )
+            }
+            Err(_) => {
+                logs.register(vec![&u, "Nick jest już zajęty."]);
+                Flash::error(
+                    Redirect::to(uri!(register_new)),
+                    format!("Nick <strong>{}</strong> jest już zajęty!", u),
+                )
+            }
         },
-        Err(err) => Flash::new(
-            Redirect::to(uri!(register_new)),
-            "error_w_nick",
-            format!("{err};;;{u}"),
-        ),
+        Err(err) => {
+            logs.register(vec![&u, &err]);
+            Flash::new(
+                Redirect::to(uri!(register_new)),
+                "error_w_nick",
+                format!("{err};;;{u}"),
+            )
+        }
     }
 }
 
