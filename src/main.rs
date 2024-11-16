@@ -23,6 +23,7 @@ use rocket_multipart_form_data::{
     mime, MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
 };
 use sqlx::pool::PoolConnection;
+use std::str::FromStr;
 
 #[macro_use]
 extern crate rocket;
@@ -130,12 +131,10 @@ async fn register_new_post<'a>(
     let u = maker_user.uname;
 
     // Attempt to create the user
-    let user = maker_user.into_inner()
-        .create_user()
-        .map_err(|err| {
-            logs.register(vec![&u, "register", &err.get_reason(), "0"]);
-            Flash::error(Redirect::to(uri!(register_new)), &err.to_string())
-        })?;
+    let user = maker_user.into_inner().create_user().map_err(|err| {
+        logs.register(vec![&u, "register", &err.get_reason(), "0"]);
+        Flash::error(Redirect::to(uri!(register_new)), &err.to_string())
+    })?;
 
     // Attempt to insert the user into the database
     user.insert(&mut *db)
@@ -144,7 +143,10 @@ async fn register_new_post<'a>(
             logs.register(vec![&u.Username, "Utworzono użytkownika."]);
             Flash::success(
                 Redirect::to(uri!(index)),
-                format!("Pomyślnie utworzono użytkownika <strong>{}</strong>", u.Username),
+                format!(
+                    "Pomyślnie utworzono użytkownika <strong>{}</strong>",
+                    u.Username
+                ),
             )
         })
         .map_err(|_| {
@@ -155,7 +157,6 @@ async fn register_new_post<'a>(
             )
         })
 }
-
 
 #[get("/")]
 async fn index(
@@ -410,7 +411,8 @@ async fn get_file_by_id(
     jar: &CookieJar<'_>,
     mut db: Connection<SQL>,
     file_id: i32,
-) -> Result<Template, Flash<Redirect>> {
+) -> Result<Result<Template, DownloadResponse>, Flash<Redirect>> {
+    //Template
     let user = User::get_from_cookies(&mut *db, jar)
         .await
         .ok_or_else(|| Flash::error(Redirect::to(uri!(index)), "Należy się zalogować!"))?;
@@ -419,19 +421,46 @@ async fn get_file_by_id(
         Flash::error(Redirect::to(uri!(index)), "Nie masz dostępu do tego pliku!")
     })?;
 
-    let bytes = file.Content.as_bytes();
-    let hex = HEXUPPER
-        .decode(bytes)
-        .map_err(|_| Flash::error(Redirect::to(uri!(index)), "Błąd dekodowania pliku!"))?;
+    let bytes = file.Content.into_bytes();
 
-    Ok(Template::render(
-        "file",
-        context! {
-            mimetype: file.MimeType.unwrap(),
-            data: BASE64_STANDARD.encode(&hex),
-        },
-    ))
+    let mime_type: mime::Mime = file
+        .MimeType
+        .clone()
+        .unwrap()
+        .parse()
+        .unwrap_or_else(|_| mime::APPLICATION_OCTET_STREAM);
+    let mimetype_is_compatible_for_iframe = match (mime_type.type_(), mime_type.subtype()) {
+        (mime::TEXT, _) => true,                // text/*
+        (mime::APPLICATION, mime::PDF) => true, // application/pdf
+        (mime::IMAGE, _) => true,               // image/*
+        (mime::VIDEO, _) => true,               // video/*
+        _ => false,
+    };
+
+    if mimetype_is_compatible_for_iframe {
+        let hex = HEXUPPER
+            .decode(&bytes) //.map to template?
+            .map_err(|_| Flash::error(Redirect::to(uri!(index)), "Błąd dekodowania pliku!"))?;
+
+        Ok(Ok(Template::render(
+            "file",
+            context! {
+                mimetype: file.MimeType.unwrap(),
+                data: BASE64_STANDARD.encode(&hex),
+            },
+        )))
+    } else {
+        // TODO in .html.hbs file make the modal window dont popup too for those
+        Ok(Err(DownloadResponse::from_vec(
+            bytes,                                                        // File bytes
+            Some(file.Filename),                                          // Optional file name
+            Some(mime::Mime::from_str(&file.MimeType.unwrap()).unwrap()), // Let MIME type be inferred
+        )))
+    }
 }
+
+use rocket_download_response::DownloadResponse;
+fn download_file() {}
 
 #[post("/login", data = "<maker_user>")]
 async fn index_login<'a>(

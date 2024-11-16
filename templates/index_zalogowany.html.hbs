@@ -144,7 +144,7 @@
                                     <span id="li_a" style="color:black;cursor: pointer"
                                           class="badge badge-{{#mod @index 2}}success{{else}}primary{{/mod}}"
                                           target="_blank"
-                                          onclick="openmodal('/get/{{ this.id }}', '{{ this.Filename }}')"> {{ this.Filename }}</span>
+                                          onclick="openmodal('/get/{{ this.id }}', '{{ this.Filename }}', '{{this.MimeType}}')"> {{ this.Filename }}</span>
                                 </h5>
                             </div>
                             <div class="col-4">
@@ -292,23 +292,41 @@
 
     <section id="modalScriptAndStyleSection">
         <script>
-            function openmodal(url, name){
-                console.log(url);
-                console.log(name);
+            function openmodal(url, name, mimetype){
+                if(typeCompatibleWithIFrame(mimetype)){
+                    var modal = document.getElementById("myModal");
+                    modal.style.display = "block";
 
-                var modal = document.getElementById("myModal");
-                modal.style.display = "block";
+                    var modalImg = document.getElementById("img01");
+                    modalImg.src = url;
 
-                var modalImg = document.getElementById("img01");
-                modalImg.src = url;
-
-                var captionText = document.getElementById("caption");
-                captionText.innerHTML = name;
+                    var captionText = document.getElementById("caption");
+                    captionText.innerHTML = name;
+                }else{
+                    window.location.href = url;  // Start the download by setting the URL
+                }
             }
 
             function closemodal(){
                 var modal = document.getElementById("myModal");
                 modal.style.display = "none";
+            }
+
+            function typeCompatibleWithIFrame(mimetype){
+                var parts = mimetype.split('/');
+                var type = parts[0];
+                var subtype = parts[1];
+
+                if (type === 'text') {
+                    return true;  // text/*
+                } else if (type === 'application' && subtype === 'pdf') {
+                    return true;  // application/pdf
+                } else if (type === 'image') {
+                    return true;  // image/*
+                } else if (type === 'video') {
+                    return true;  // video/*
+                }
+                return false;
             }
 
         </script>
