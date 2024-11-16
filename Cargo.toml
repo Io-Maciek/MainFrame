@@ -27,4 +27,5 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.87"
 rocket_dyn_templates = { version = "0.2.0", features = ["handlebars"] }
 chrono = "0.4.23"
+rocket-download-response = "0.5.4"
 #paste = "1.0.9"

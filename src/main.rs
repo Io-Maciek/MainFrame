@@ -14,7 +14,6 @@ use rocket::fs::{relative, FileServer};
 use rocket::http::ContentType;
 use rocket::http::CookieJar;
 use rocket::request::FlashMessage;
-use rocket::response::content::RawHtml;
 use rocket::response::{Flash, Redirect};
 use rocket::serde::Serialize;
 use rocket::{Build, Data, Rocket, State};
@@ -28,6 +27,7 @@ use sqlx::pool::PoolConnection;
 #[macro_use]
 extern crate rocket;
 
+mod errors;
 mod file;
 mod hbs_helpers;
 mod html_macros;
@@ -48,8 +48,15 @@ struct Message<'a> {
 impl<'a> Message<'a> {
     pub fn get_from_flash(flash: Option<FlashMessage<'_>>) -> Option<Message> {
         if let Some(_f) = flash {
-            let fl = _f.into_inner();
-            println!("{:?}", &fl.0);
+            let fl: (String, String) = _f.into_inner();
+            if let Some(text) = errors::get_message_from_reason(&fl.0, Some(&fl.1)) {
+                return Some(Message {
+                    color: "danger",
+                    text: text,
+                    optional: None,
+                });
+            }
+
             if &fl.0 == "error" {
                 Some(Message {
                     color: "danger",
@@ -124,12 +131,12 @@ async fn register_new_post<'a>(
     match maker_user.into_inner().create_user() {
         Ok(user) => match user.insert(&mut *db).await {
             Ok(u) => {
-                logs.register(vec![&u.username, "Utworzono użytkownika."]);
+                logs.register(vec![&u.Username, "Utworzono użytkownika."]);
                 Flash::success(
                     Redirect::to(uri!(index)),
                     format!(
                         " Pomyślnie utworzono użytkownika <strong>{}</strong>",
-                        u.username
+                        u.Username
                     ),
                 )
             }
@@ -142,15 +149,16 @@ async fn register_new_post<'a>(
             }
         },
         Err(err) => {
-            logs.register(vec![&u, &err]);
-            Flash::new(
+            logs.register(vec![&u, "register", &err.get_reason(), "0"]);
+            Flash::error(
                 Redirect::to(uri!(register_new)),
-                "error_w_nick",
-                format!("{err};;;{u}"),
+                &err.to_string(),
             )
         }
     }
 }
+
+
 
 #[get("/")]
 async fn index(
@@ -220,7 +228,7 @@ async fn delete_sharing(
             None => Flash::error(Redirect::to(uri!(index)), "Należy się zalogować!"),
             Some(owner) => match UserFiles::get_from_user_and_file(&mut *db, &owner, &file).await {
                 Ok(uf_owner) => {
-                    if uf_owner.is_owner == true {
+                    if uf_owner.Owner == true {
                         let q = format!(
                             r"DELETE FROM UserFiles WHERE ID = (SELECT UF.ID FROM UserFiles AS UF JOIN Files AS F ON F.ID = UF.FileID
 														JOIN Users AS U ON U.ID = UF.UserID WHERE F.ID = {} AND U.Username = '{}'
@@ -230,7 +238,7 @@ async fn delete_sharing(
                         match sqlx::query_as::<_, UserFiles>(&q).fetch_optional(db.as_mut()).await {
                                     Ok(_) => {
                                         Flash::success(Redirect::to(uri!(index)),
-                                                       format!("Przestano udostępniać plik <strong>{}</strong> użytkownikowi <strong>{}</strong>", file.filename, username))
+                                                       format!("Przestano udostępniać plik <strong>{}</strong> użytkownikowi <strong>{}</strong>", file.Filename, username))
                                     }
                                     Err(er) => Flash::error(Redirect::to(uri!(index)), format!("ERR: {:?}", er))
                                 }
@@ -239,7 +247,7 @@ async fn delete_sharing(
                             Redirect::to(uri!(index)),
                             format!(
                                 "Nie jesteś właścicielem pliku <strong>{}</strong>!",
-                                file.filename
+                                file.Filename
                             ),
                         )
                     }
@@ -262,7 +270,7 @@ async fn add_new_sharing_user(
         None => Flash::error(Redirect::to(uri!(index)), "Należy się zalogować!"),
         Some(user_owner) => {
             let f = File::get_one(&mut *db, file_id).await.unwrap();
-            let filename = &f.filename;
+            let filename = &f.Filename;
             match UserFiles::add_shared_user(&mut *db, &user_owner, &f, username.clone()).await {
                 Ok(_) => Flash::success(
                     Redirect::to(uri!(index)),
@@ -367,7 +375,7 @@ async fn get_file_by_id(
     jar: &CookieJar<'_>,
     mut db: Connection<SQL>,
     file_id: i32,
-) -> Result<RawHtml<String>, Flash<Redirect>> {
+) -> Result<Template, Flash<Redirect>> {
     //Result<Vec<u8>, &'a str> {
     //TODO przedstawić to trochę lepiej
 
@@ -386,30 +394,15 @@ async fn get_file_by_id(
                 )), //nie znaleziono pliku
                 Some(file) => {
                     //plik jest
-                    let bytes = file.content.as_bytes();
+                    let bytes = file.Content.as_bytes();
                     let hex = HEXUPPER.decode(bytes).unwrap();
                     //Ok(hex)
-                    Ok(RawHtml(
-                        format!("
-                        <!DOCTYPE html>
-                        <html lang='en'>
-                        <head>
-                            <meta charset='UTF-8'>
-                            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-                            <title>Iframe Content</title>
-                            <style type='text/css'>
-                                body, html {{margin: 0;padding: 0;width: 100%;height: 100%;overflow: hidden;}}
-                            </style>
-                        </head>
-                        <body style='width:100%; height: 100%'>
-						<iframe frameborder='0' id='ItemPreview' src='' style='width:100%; height: 100%'></iframe>
-						<script>
-							document.getElementById('ItemPreview').src = 'data:{};base64,{}';
-						</script>
-                        </body>
-                        </html>
-						", 
-                        file.mime_type.unwrap(), BASE64_STANDARD.encode(&hex))
+                    Ok(Template::render(
+                        "file",
+                        context! {
+                            mimetype: file.MimeType.unwrap(),
+                            data: BASE64_STANDARD.encode(&hex),
+                        }
                     ))
                 }
             }
@@ -427,12 +420,16 @@ async fn index_login<'a>(
     match maker_user.check_user_login(&mut *db).await {
         Ok(mut user) => {
             user.create_new_session(&mut *db, jar).await;
-            logs.register(vec![maker_user.uname, "OK"]);
+            logs.register(vec![maker_user.uname, "login", "", "1"]);
             Ok(Redirect::to(uri!(index)))
         }
         Err(err) => {
-            logs.register(vec![maker_user.uname, &err]);
-            Err(Flash::error(Redirect::to(uri!(index)), err))
+            logs.register(vec![maker_user.uname, "login", &err.get_reason(), "0"]);
+            Err(Flash::new(
+                Redirect::to(uri!(index)),
+                &err.get_reason().to_string(),
+                err.get_username(),
+            ))
         }
     }
 }

@@ -75,7 +75,7 @@ macro_rules! sql_struct {
 		#[derive(sqlx::FromRow)]
 		$visibility struct $struct{
 			#[sqlx(rename=$id_name)]
-			pub Id:$id,
+			pub id:$id,
 			$(
 				$(#[$field_attr] )*
 				$element_visibility $element: $type,
@@ -85,7 +85,7 @@ macro_rules! sql_struct {
 
 		pub enum Fields
 		{
-			Id,
+			id,
 			$(
 				$element
 			),*
@@ -98,7 +98,7 @@ macro_rules! sql_struct {
 		impl $struct{
 			pub fn new($($element: $type),*)->$struct{
 				$struct{
-					Id: Default::default(),
+					id: Default::default(),
 					$(
 						$element
 					),*
@@ -144,11 +144,11 @@ macro_rules! sql_struct {
 				let sql_str = stringify!($sql);
 				if sql_str.eq("Sqlite"){
 					Ok(format!("UPDATE {} SET {} WHERE {} = {} RETURNING *",$table,args.join(", "), $id_name,
-						&self.sql_types_string(Fields::Id)))
+						&self.sql_types_string(Fields::id)))
 
 				}else if sql_str.eq("Mssql"){
 					Ok(format!("UPDATE {} SET {} OUTPUT inserted.* WHERE {}={}",$table,args.join(", "), $id_name,
-					&self.sql_types_string(Fields::Id)))
+					&self.sql_types_string(Fields::id)))
 				}else{
 					panic!("{}",format!("Database pool '{}' is not yet implemented", sql_str));
 					//Err(format!("Database pool '{}' is not yet implemented", sql_str))

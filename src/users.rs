@@ -7,7 +7,7 @@ use data_encoding::HEXUPPER;
 use ring::rand::SecureRandom;
 use rocket::http::{Cookie, CookieJar};
 use sqlx::pool::PoolConnection;
-use sqlx::{Sqlite}; // Mssql
+use sqlx::Sqlite; // Mssql
 use rocket::serde::Serialize;
 
 //pub struct User<Sqlite>{
@@ -16,28 +16,28 @@ sql_struct!(
 	ID("ID")
 	pub struct User<Sqlite>{
 		i32,
-		pub username:String,
-		pub hash:String,
-		pub salt:String,
-		session_id:Option<String>
+		pub Username:String,
+		pub Hash:String,
+		pub Salt:String,
+		SessionID:Option<String>
 	}
 );
 
 impl PartialEq<User> for User{
 	fn eq(&self, other: &User) -> bool {
-		other.Id == self.Id
+		other.id == self.id
 	}
 }
 
 impl Insertable<Fields> for User{
 	fn sql_types_string(&self, field: Fields) -> String {
 		match field{
-			Fields::Id => self.Id.to_string(),
-			Fields::username => format!("'{}'",self.username),
-			Fields::hash => format!("'{}'",self.hash),
-			Fields::salt => format!("'{}'",self.salt),
-			Fields::session_id => {
-				match self.session_id.as_ref() {
+			Fields::id => self.id.to_string(),
+			Fields::Username => format!("'{}'",self.Username),
+			Fields::Hash => format!("'{}'",self.Hash),
+			Fields::Salt => format!("'{}'",self.Salt),
+			Fields::SessionID => {
+				match self.SessionID.as_ref() {
 					None => "NULL".to_string(),
 					Some(sess) => format!("'{}'", sess)
 				}
@@ -48,7 +48,7 @@ impl Insertable<Fields> for User{
 
 impl Display for User {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-		write!(f, "{}", &self.username)
+		write!(f, "{}", &self.Username)
 	}
 }
 
@@ -67,17 +67,17 @@ impl User {
 		rng.fill(&mut s).unwrap();
 		let encoded_session = HEXUPPER.encode(&s);
 
-		self.session_id = Some(encoded_session.clone());
+		self.SessionID = Some(encoded_session.clone());
 		let _ = self.update(db).await;
 
-		jar.add(Cookie::build("session_id").http_only(true).build());
+		jar.add(Cookie::build(("SessionID",encoded_session)).http_only(true).build());
 	}
 
 	pub async fn get_from_cookies(db: &mut PoolConnection<Sqlite>, jar: &CookieJar<'_>) -> Option<User> {
-		match jar.get("session_id") {
+		match jar.get("SessionID") {
 			None => None,
-			Some(session_id) => {
-				match sqlx::query_as::<_, User>(&format!("SELECT * FROM Users WHERE SessionID='{}'", session_id.value())).fetch_one(db.as_mut()).await.ok() {
+			Some(SessionID) => {
+				match sqlx::query_as::<_, User>(&format!("SELECT * FROM Users WHERE SessionID='{}'", SessionID.value())).fetch_one(db.as_mut()).await.ok() {
 					Some(user) => Some(user),
 					None => None
 				}
@@ -86,11 +86,11 @@ impl User {
 	}
 
 	pub async fn logout(mut db: Connection<SQL>, jar: &CookieJar<'_>) {
-		match jar.get("session_id") {
+		match jar.get("SessionID") {
 			None => {}
 			Some(sess_id_jar) => {
 				if let Some(mut user) = User::get_from_cookies(&mut *db, jar).await {
-					user.session_id = None;
+					user.SessionID = None;
 					let _ = user.update(&mut *db).await;
 				}
 				jar.remove(sess_id_jar.clone());

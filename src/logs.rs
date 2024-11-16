@@ -28,7 +28,7 @@ impl Log {
                 .write(true)
                 .open(&f.filepath)
                 .unwrap(),
-            "Czas,Użytkownik,Opis"
+            "Czas,Użytkownik,Powód,Opis,Status"
         );
 
         f
@@ -56,7 +56,7 @@ impl Log {
                         .write(true)
                         .open(&self.filepath)
                         .unwrap(),
-                    "Czas,Użytkownik,Opis"
+                    "Czas,Użytkownik,Powód,Opis,Status"
                 );
 
                 match OpenOptions::new()

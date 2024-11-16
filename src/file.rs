@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 use rocket::http::CookieJar;
 use crate::{sql_struct, User};
 use crate::sql_traits::{Insertable, Queryable};
-use sqlx::{Sqlite}; //Mssql
+use sqlx::Sqlite; //Mssql
 use sqlx::pool::PoolConnection;
 use rocket::serde::Serialize;
 use crate::users_files::UserFiles;
@@ -12,27 +12,27 @@ sql_struct!(
 	ID("ID")
 	pub struct File<Sqlite>{
 		i32,
-		pub filename:String,
-		pub content:String,
-		pub mime_type:Option<String>,
+		pub Filename:String,
+		pub Content:String,
+		pub MimeType:Option<String>,
 	}
 );
 
 impl Display for File
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-		write!(f, "{}", &self.filename)
+		write!(f, "{}", &self.Filename)
 	}
 }
 
 impl Insertable<Fields> for File {
 	fn sql_types_string(&self, field: Fields) -> String {
 		match field {
-			Fields::Id => self.Id.to_string(),
-			Fields::filename => format!("'{}'", self.filename),
-			Fields::content => format!("'{}'", self.content),
-			Fields::mime_type => {
-				match self.mime_type.as_ref() {
+			Fields::id => self.id.to_string(),
+			Fields::Filename => format!("'{}'", self.Filename),
+			Fields::Content => format!("'{}'", self.Content),
+			Fields::MimeType => {
+				match self.MimeType.as_ref() {
 					None => "NULL".to_string(),
 					Some(mime) => format!("'{}'", mime)
 				}
@@ -46,7 +46,7 @@ impl File {
 	pub async fn insert_for_owner(self, db: &mut PoolConnection<Sqlite>, user: &User) -> Result<UserFiles, sqlx::Error> {
 		match self.insert(db).await {
 			Ok(file) => {
-				let user_file = UserFiles::new(user.Id, file.Id, true);
+				let user_file = UserFiles::new(user.id, file.id, true);
 				match user_file.insert(db).await {
 					Ok(uf) => Ok(uf),
 					Err(err0) => Err(err0)
@@ -70,12 +70,12 @@ impl File {
 				match UserFiles::delete(db, &user, &self).await {
 					Ok(owner_value) => {
 						if owner_value{
-							Ok(String::from(format!("Plik <strong>{}</strong> został pomyślnie usunięty",self.filename)))
+							Ok(String::from(format!("Plik <strong>{}</strong> został pomyślnie usunięty",self.Filename)))
 						}else{
-							Ok(String::from(format!("Wyłączono się z udostępniania pliku <strong>{}</strong>",self.filename)))
+							Ok(String::from(format!("Wyłączono się z udostępniania pliku <strong>{}</strong>",self.Filename)))
 						}
 					},
-					Err(_) => Err(format!("Nie masz dostępu do pliku <strong>{}</strong>",&self.filename))
+					Err(_) => Err(format!("Nie masz dostępu do pliku <strong>{}</strong>",&self.Filename))
 				}
 			}
 		}
@@ -87,17 +87,17 @@ impl File {
 			Some(user) => {
 				match UserFiles::get_from_user_and_file(&mut *db, &user, &self).await {
 					Ok(uf) => {
-						if uf.is_owner == true {
-							self.filename = new_filename;
+						if uf.Owner == true {
+							self.Filename = new_filename;
 							let _ = &self.update(db).await;
 							Ok(())
 						} else {
-							Err(format!("Nie jesteś właścicielem pliku <strong>{}</strong>",&self.filename))
+							Err(format!("Nie jesteś właścicielem pliku <strong>{}</strong>",&self.Filename))
 						}
 					}
 					Err(er) =>{
 						println!("{}",format!("{:?}", er));
-						Err(format!("Nie masz dostępu do pliku <strong>{}</strong>",&self.filename))
+						Err(format!("Nie masz dostępu do pliku <strong>{}</strong>",&self.Filename))
 					}
 				}
 			}
