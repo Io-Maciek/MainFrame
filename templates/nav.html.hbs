@@ -31,7 +31,7 @@
                 for (let li of li_s){
                     let a_content = li.children[0].children[0].children[0].children[0];
 
-                    if(a_content.text.toLowerCase().trim().includes(input.toLowerCase())){
+                    if(a_content.innerHTML.toLowerCase().trim().includes(input.toLowerCase())){
                         li.style.display = null;
                         a_content.classList.remove(a_content.classList[1]);
                         if(index%2==0){

@@ -14,6 +14,7 @@ use rocket::fs::{relative, FileServer};
 use rocket::http::ContentType;
 use rocket::http::CookieJar;
 use rocket::request::FlashMessage;
+use rocket::response::content::RawHtml;
 use rocket::response::{Flash, Redirect};
 use rocket::serde::Serialize;
 use rocket::{Build, Data, Rocket, State};
@@ -70,14 +71,6 @@ impl<'a> Message<'a> {
                     text: fl.1,
                     optional: None,
                 })
-            } else if &fl.0 == "error_w_nick" {
-                //println!("asdadasdsadsad");
-                let splitted = fl.1.split(";;;").collect::<Vec<&str>>();
-                Some(Message {
-                    color: "danger",
-                    text: splitted[0].into(),
-                    optional: Some(splitted[1].into()),
-                })
             } else {
                 None
             }
@@ -94,31 +87,14 @@ async fn register_new(
     flash: Option<FlashMessage<'_>>,
 ) -> Result<Template, Redirect> {
     match User::get_from_cookies(&mut *db, &jar.clone()).await {
-        None => {
-            /*
-            //
-                GŁÓWNA STRONA DLA NIEZALOGOWANEGO UŻYTKOWNIKA
-            //
-             */
-
-            Ok(Template::render(
-                "rejestracja",
-                context! {
-                    title: "MainFrame",
-                    message: Message::get_from_flash(flash),
-                },
-            ))
-        }
-        Some(_) => {
-            /*
-            //
-                GŁÓWNA STRONA DLA ZALOGOWANYCH
-                jeżeli zalogowany, to redirect-uj do strony głównej
-            //
-             */
-
-            Err(Redirect::to(uri!(index)))
-        }
+        None => Ok(Template::render( // if not logged in, show page
+            "rejestracja",
+            context! {
+                title: "MainFrame",
+                message: Message::get_from_flash(flash),
+            },
+        )),
+        Some(_) => Err(Redirect::to(uri!(index))), // if logged in, redirect
     }
 }
 
@@ -140,7 +116,7 @@ async fn register_new_post<'a>(
     user.insert(&mut *db)
         .await
         .map(|u| {
-            logs.register(vec![&u.Username, "Utworzono użytkownika."]);
+            logs.register(vec![&u.Username, "register", "created new user", "1"]);
             Flash::success(
                 Redirect::to(uri!(index)),
                 format!(
@@ -150,7 +126,7 @@ async fn register_new_post<'a>(
             )
         })
         .map_err(|_| {
-            logs.register(vec![&u, "Nick jest już zajęty."]);
+            logs.register(vec![&u, "register", "username is already taken", "0"]);
             Flash::error(
                 Redirect::to(uri!(register_new)),
                 format!("Nick <strong>{}</strong> jest już zajęty!", u),
@@ -411,7 +387,7 @@ async fn get_file_by_id(
     jar: &CookieJar<'_>,
     mut db: Connection<SQL>,
     file_id: i32,
-) -> Result<Result<Template, DownloadResponse>, Flash<Redirect>> {
+) -> Result<Result<RawHtml<String>, DownloadResponse>, Flash<Redirect>> {
     //Template
     let user = User::get_from_cookies(&mut *db, jar)
         .await
@@ -442,13 +418,7 @@ async fn get_file_by_id(
             .decode(&bytes) //.map to template?
             .map_err(|_| Flash::error(Redirect::to(uri!(index)), "Błąd dekodowania pliku!"))?;
 
-        Ok(Ok(Template::render(
-            "file",
-            context! {
-                mimetype: file.MimeType.unwrap(),
-                data: BASE64_STANDARD.encode(&hex),
-            },
-        )))
+        Ok(Ok(RawHtml(BASE64_STANDARD.encode(&hex))))
     } else {
         // TODO in .html.hbs file make the modal window dont popup too for those
         Ok(Err(DownloadResponse::from_vec(

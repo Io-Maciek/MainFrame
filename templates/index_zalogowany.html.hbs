@@ -108,28 +108,27 @@
 
     <h1 style="color: white;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000; ">Witaj
         <i>{{ user.Username }}</i></h1>
-    <form action="/plik" method="POST" enctype="multipart/form-data">
-        <div class="row">
-            <div class="col-10">
-                <div class="form-group custom-file mb-2">
-                    <input onchange="inputFileChanged()" type='file' id='myfile' name='myfile'
-                           class="custom-file-input">
-                    <label id="lblMyFile" class="custom-file-label" for="myfile">Wybierz plik</label>
+    <form id="uploadForm" action="/plik" method="POST" enctype="multipart/form-data" onsubmit="return false;">
+    <div class="row">
+        <div class="col-10">
+            <div class="form-group custom-file mb-2">
+                <input onchange="inputFileChanged()" type='file' id='myfile' name='myfile'
+                    class="custom-file-input">
+                <label id="lblMyFile" class="custom-file-label" for="myfile">Wybierz plik</label>
 
-                    <div id="mainProgressDiv" style="display: none;" class="progress">
-                        <div id="progressBar1" class="progress-bar" role="progressbar" style="width: 0%;"
+                <div id="mainProgressDiv" style="display: none;" class="progress">
+                    <div id="progressBar1" class="progress-bar" role="progressbar" style="width: 0%;"
                              aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-
                 </div>
-            </div>
-            <div class="col-2">
-                <button id="fileSubmitButton" class='btn btn-success mb-2 float-right' type='submit' disabled>Wyślij
-                </button>
+
             </div>
         </div>
-
-    </form>
+        <div class="col-2">
+            <button disabled id="fileSubmitButton" class='btn btn-success mb-2 float-right' type='button' onclick="uploadFile()">Wyślij
+            </button>
+        </div>
+    </div>
+</form>
     <br>
     {{#if files_owned}}
         <div class="container">
@@ -212,75 +211,60 @@
     {{/if}}
 
 
-    <div id="myModal" class="modal" style="
-  display: none; /* Hidden by default */
-  position: fixed; /* Stay in place */
-  z-index: 1; /* Sit on top */
-  padding-top: 100px; /* Location of the box */
-  left: 0;
-  top: 0;
-  width: 100%; /* Full width */
-  height: 100%; /* Full height */
-
-  overflow: auto; /* Enable scroll if needed */
-  background-color: rgb(0,0,0); /* Fallback color */
-  background-color: rgba(0,0,0,0.9); /* Black w/ opacity */
-">
+    <div id="myModal" class="modal-with-file">
         <span onclick="closemodal()" class="close">&times;</span>
-        <iframe style="
-  margin: auto;
-  display: block;
-  width: 90%; /* Let it resize based on content */
-  height: 90%; /* Let it resize based on content */
-" class="modal-content" id="img01"></iframe>
+        <iframe class="modal-file" id="img01"></iframe>
         <div id="caption"></div>
     </div>
 
     <section id="scriptFileUploadSection">
         <script>
+            function uploadFile() {
+                const form = _('uploadForm');
+                const formData = new FormData(form);
+                
+                _('mainProgressDiv').style.display = 'block';
+
+                const xhr = new XMLHttpRequest();
+
+                // Set up the request and specify the event listeners for progress and completion
+                xhr.open('POST', form.action, true);
+
+                // Track the progress of the file upload
+                xhr.upload.onprogress = function (event) {
+                    if (event.lengthComputable) {
+                        var percent = (event.loaded / event.total) * 100;
+                        _("progressBar1").innerHTML = Math.round(percent) + "%";
+                        _("progressBar1").style.width = Math.round(percent)+"%";
+                    }
+                };
+
+                // Handle the completion of the request (success or failure)
+                xhr.onload = function () {
+                    if (xhr.status === 200) {
+                        _("progressBar1").innerHTML = "100% Please wait...";
+                        _("progressBar1").style.width = "100%";
+                        window.location.reload();  // Reload the page
+                    } else {
+                        alert('Error uploading file');
+                    }
+                };
+
+                // Send the form data (file) via the XMLHttpRequest
+                xhr.send(formData);
+            }
+
+
             function inputFileChanged(){
-                let filename = document.getElementById("myfile").files[0].name;
-                document.getElementById('lblMyFile').innerHTML = filename;
+                let filename = _("myfile").files[0].name;
+                _('lblMyFile').innerHTML = filename;
+                const submitButton = _('fileSubmitButton');
 
-                var ajax = new XMLHttpRequest();
-                var formdata = new FormData();
-                formdata.append("lblMyFile", document.getElementById("myfile").files[0]);
-                _("progressBar1").style.width = "0%";
-                _("progressBar1").innerHTML = "";
-                _("fileSubmitButton").disabled = true;
-                _("mainProgressDiv").style.display = "block";
-
-                ajax.upload.addEventListener("progress", progressHandler, false);
-                ajax.addEventListener("load", completeHandler, false);
-                ajax.addEventListener("error", errorHandler, false);
-                ajax.addEventListener("abort", abortHandler, false);
-                ajax.open("POST", "/plik"); // http://www.developphp.com/video/JavaScript/File-Upload-Progress-Bar-Meter-Tutorial-Ajax-PHP
-                ajax.send(formdata);
-            }
-
-
-            function progressHandler(event) {
-                var percent = (event.loaded / event.total) * 100;
-                _("progressBar1").innerHTML = Math.round(percent) + "%";
-                var percent = (event.loaded / event.total) * 100;
-                _("progressBar1").style.width = Math.round(percent)+"%";
-                //_("status").innerHTML = Math.round(percent) + "% uploaded... please wait";
-            }
-
-            function completeHandler(event) {
-                //"fileSubmitButton"
-                _("fileSubmitButton").disabled = false;
-
-              //_("status").innerHTML = event.target.responseText;
-              //_("progressBar1").style.width = "0%"; //wil clear progress bar after successful upload
-            }
-
-            function errorHandler(event) {
-              //_("status").innerHTML = "Upload Failed";
-            }
-
-            function abortHandler(event) {
-              //_("status").innerHTML = "Upload Aborted";
+                if (filename.length > 0) {
+                    submitButton.disabled = false;
+                } else {
+                    submitButton.disabled = true;
+                }
             }
 
             function _(el) {
@@ -292,16 +276,27 @@
 
     <section id="modalScriptAndStyleSection">
         <script>
-            function openmodal(url, name, mimetype){
+            async function openmodal(url, name, mimetype){
                 if(typeCompatibleWithIFrame(mimetype)){
-                    var modal = document.getElementById("myModal");
-                    modal.style.display = "block";
 
-                    var modalImg = document.getElementById("img01");
-                    modalImg.src = url;
+                    try {
+                        const response = await fetch(url);
+                        if (!response.ok) {
+                            throw new Error(`Failed to fetch content from ${url}. Status: ${response.status}`);
+                        }
+                        
+                        var modal = document.getElementById("myModal");
+                        modal.style.display = "block";
 
-                    var captionText = document.getElementById("caption");
-                    captionText.innerHTML = name;
+                        var modalImg = document.getElementById("img01");
+                        modalImg.src = 'data:'+mimetype+';base64,'+await response.text();
+
+                        var captionText = document.getElementById("caption");
+                        captionText.innerHTML = name;
+                    } catch (error) {
+                        console.error("Error fetching the URL:", error);
+                        alert("Unable to load the content. Please try again.");
+                    }
                 }else{
                     window.location.href = url;  // Start the download by setting the URL
                 }
@@ -310,6 +305,9 @@
             function closemodal(){
                 var modal = document.getElementById("myModal");
                 modal.style.display = "none";
+                
+                var modalImg = document.getElementById("img01");
+                modalImg.src = "";
             }
 
             function typeCompatibleWithIFrame(mimetype){
@@ -330,75 +328,6 @@
             }
 
         </script>
-        <style>
-            #myfile ~ #lblMyFile::after {
-                content: "Wyszukaj";
-            }
-
-            #myImg {
-  border-radius: 5px;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-#myImg:hover {opacity: 0.7;}
-
-
-/* Caption of Modal Image */
-#caption {
-  margin: auto;
-  display: block;
-  width: 80%;
-  max-width: 700px;
-  text-align: center;
-  color: #ccc;
-  padding: 10px 0;
-  height: 150px;
-}
-
-/* Add Animation */
-.modal-content, #caption {
-  -webkit-animation-name: zoom;
-  -webkit-animation-duration: 0.6s;
-  animation-name: zoom;
-  animation-duration: 0.6s;
-}
-
-@-webkit-keyframes zoom {
-  from {-webkit-transform:scale(0)}
-  to {-webkit-transform:scale(1)}
-}
-
-@keyframes zoom {
-  from {transform:scale(0)}
-  to {transform:scale(1)}
-}
-
-/* The Close Button */
-.close {
-  position: absolute;
-  top: 15px;
-  right: 35px;
-  color: #f1f1f1;
-  font-size: 40px;
-  font-weight: bold;
-  transition: 0.3s;
-}
-
-.close:hover,
-.close:focus {
-  color: #bbb;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-/* 100% Image Width on Smaller Screens */
-@media only screen and (max-width: 700px){
-  .modal-content {
-    width: 100%;
-  }
-}
-        </style>
     </section>
 
 
