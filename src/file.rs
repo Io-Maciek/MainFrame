@@ -1,14 +1,10 @@
-use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use rocket::http::CookieJar;
 use crate::{sql_struct, User};
 use crate::sql_traits::{Insertable, Queryable};
-use crate::SQL;
-use rocket_db_pools::Connection;
-use sqlx::{Error , Sqlite}; //Mssql
+use sqlx::Sqlite; //Mssql
 use sqlx::pool::PoolConnection;
 use rocket::serde::Serialize;
-use serde_json::error::Category::Data;
 use crate::users_files::UserFiles;
 
 sql_struct!(
@@ -50,8 +46,8 @@ impl File {
 	pub async fn insert_for_owner(self, db: &mut PoolConnection<Sqlite>, user: &User) -> Result<UserFiles, sqlx::Error> {
 		match self.insert(db).await {
 			Ok(file) => {
-				let UserFile = UserFiles::new(user.id, file.id, true);
-				match UserFile.insert(db).await {
+				let user_file = UserFiles::new(user.id, file.id, true);
+				match user_file.insert(db).await {
 					Ok(uf) => Ok(uf),
 					Err(err0) => Err(err0)
 				}
@@ -79,7 +75,7 @@ impl File {
 							Ok(String::from(format!("Wyłączono się z udostępniania pliku <strong>{}</strong>",self.Filename)))
 						}
 					},
-					Err(err) => Err(format!("Nie masz dostępu do pliku <strong>{}</strong>",&self.Filename))
+					Err(_) => Err(format!("Nie masz dostępu do pliku <strong>{}</strong>",&self.Filename))
 				}
 			}
 		}
@@ -93,7 +89,7 @@ impl File {
 					Ok(uf) => {
 						if uf.Owner == true {
 							self.Filename = new_filename;
-							&self.update(db).await;
+							let _ = &self.update(db).await;
 							Ok(())
 						} else {
 							Err(format!("Nie jesteś właścicielem pliku <strong>{}</strong>",&self.Filename))

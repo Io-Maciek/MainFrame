@@ -1,40 +1,83 @@
-use std::fs::OpenOptions;
 use chrono::prelude::*;
-use chrono::{Datelike, Timelike};
+use std::fs::OpenOptions;
 use std::io::Write;
-use std::path::Path;
 
-pub struct Log{
-	filename: String
+pub struct Log {
+    date: DateTime<Local>,
+    filepath: std::path::PathBuf,
 }
 
-impl Log{
-	pub fn new()->Log{
-		let now = Local::now();
-		let form = format!("Log{}-{}-{}+{}_{}_{}.csv", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
-		std::fs::File::create(&form);
-		let f = Log{
-			filename: form
-		};
+impl Log {
+    pub fn new() -> Log {
+        let now = Local::now();
+        let day_str = now.format("%Y_%m_%d").to_string();
+        let form = format!("Log{}.csv", now.format("%H_%M_%S").to_string());
 
-		f.append(vec!["Czas","Użytkownik","Opis"]);
+        let f = Log {
+            date: now,
+            filepath: std::path::Path::new("logs").join(day_str).join(form),
+        };
 
-		f
-	}
+        // create parent directories log and day
+        let _ = std::fs::create_dir_all(&f.filepath.parent().unwrap());
 
-	pub fn get_filename(&self)->&str{
-		self.filename.as_ref()
-	}
+        // create(overwrite) log.csv file
+        let _ = writeln!(
+            std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .open(&f.filepath)
+                .unwrap(),
+            "Czas,Użytkownik,Powód,Opis,Status"
+        );
 
-	pub fn append(&self, text: Vec<&str>){
-		let mut file  = OpenOptions::new().create(true).write(true).append(true).open(self.filename.clone()).unwrap();
-		writeln!(file,"{}", text.join(","));
-	}
+        f
+    }
 
-	pub fn register(&self, text: Vec<&str>){
-		let now = Local::now();
-		let h = format!("{}:{}:{}", now.hour(), now.minute(), now.second());
-		let mut file  = OpenOptions::new().create(true).write(true).append(true).open(self.filename.clone()).unwrap();
-		writeln!(file,"{},{}", h,text.join(","));
-	}
+    pub fn get_filename(&self) -> &str {
+        &self.filepath.to_str().unwrap()
+    }
+
+    fn write(&self, text: &str) {
+        let mut opt = match OpenOptions::new()
+            .create(true)
+            .write(true)
+            .append(true)
+            .open(&self.filepath)
+        {
+            Ok(file) => file,
+            Err(ref e) if e.kind() == std::io::ErrorKind::NotFound => {
+				println!("Could not locate previous log directory (deleted?). Creating new.");
+                let _ = std::fs::create_dir_all(&self.filepath.parent().unwrap());
+
+                let _ = writeln!(
+                    std::fs::OpenOptions::new()
+                        .create(true)
+                        .write(true)
+                        .open(&self.filepath)
+                        .unwrap(),
+                    "Czas,Użytkownik,Powód,Opis,Status"
+                );
+
+                match OpenOptions::new()
+                    .create(true)
+                    .write(true)
+                    .append(true)
+                    .open(&self.filepath)
+                {
+                    Ok(file) => file,
+                    Err(_) => panic!("Even creating paths again created error!"),
+                }
+            }
+            Err(_) => panic!(),
+        };
+
+        let _ = writeln!(opt, "{}", text);
+    }
+
+    pub fn register(&self, text: Vec<&str>) {
+        let now = Local::now();
+
+        self.write(&format!("{},{}", now.format("%H_%M_%S").to_string(), text.join(",")));
+    }
 }

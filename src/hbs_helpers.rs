@@ -1,11 +1,10 @@
-use rocket_dyn_templates::handlebars::{Context, Handlebars, handlebars_helper, Helper, Output, Renderable, RenderContext};
-use serde_json::Value;
-use crate::handlebars::{HelperResult, RenderError};
+use rocket_dyn_templates::handlebars::{Context, Handlebars, Helper, Output, RenderContext};
+use crate::handlebars::{HelperResult};
 use crate::handlebars::template::TemplateElement;
 
 
 pub fn modulo(
-	h: &Helper<'_, '_>,
+	h: &Helper<'_>,
 	_: &Handlebars,
 	_: &Context,
 	_: &mut RenderContext<'_, '_>,
@@ -17,7 +16,7 @@ pub fn modulo(
 		for h in &h.template().unwrap().elements {
 			match h{
 				TemplateElement::RawString(s) => {
-					out.write(s);
+					let _ = out.write(s);
 				}
 				_=>{}
 			}
@@ -26,7 +25,7 @@ pub fn modulo(
 		for h in &h.inverse().unwrap().elements {
 			match h{
 				TemplateElement::RawString(s) => {
-					out.write(s);
+					let _ = out.write(s);
 				}
 				_=>{}
 			}

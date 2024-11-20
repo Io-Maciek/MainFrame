@@ -1,12 +1,9 @@
 use rocket::form::validate::Contains;
 use crate::{File, sql_struct, User};
 use crate::sql_traits::{Insertable, Queryable};
-use crate::SQL;
-use rocket_db_pools::Connection;
-use sqlx::{Error,  Sqlite}; //Mssql
+use sqlx::{Sqlite}; //Mssql
 use sqlx::pool::PoolConnection;
 use rocket::serde::Serialize;
-
 
 sql_struct!(
 	Table("UserFiles")
@@ -37,7 +34,7 @@ impl UserFiles {
 	pub async fn get_from_user_and_file(db: &mut PoolConnection<Sqlite>, user: &User, file: &File) -> Result<UserFiles, sqlx::Error>{
 		let q = format!(r"SELECT UF.* FROM UserFiles AS UF Join Users AS U ON UF.UserID = U.ID
 								JOIN Files AS F ON F.ID = UF.FileID WHERE U.ID = {} AND F.ID = {}",user.id, file.id);
-		sqlx::query_as::<_, UserFiles>(&q).fetch_one(&mut *db).await
+		sqlx::query_as::<_, UserFiles>(&q).fetch_one(db.as_mut()).await
 	}
 
 	pub async fn get_for_user(db: &mut PoolConnection<Sqlite>, user: &User) -> [Vec<File>; 2] {
@@ -46,8 +43,8 @@ impl UserFiles {
 		let q_shared = format!(r"SELECT F.* FROM UserFiles AS UF JOIN Users AS U ON UF.UserID = U.ID JOIN Files AS F ON F.ID = UF.FileID WHERE U.ID = {}
 			AND UF.Owner = 0", user.id);
 
-		let f0 = sqlx::query_as::<_, File>(&q_owner).fetch_all(&mut *db).await.unwrap();
-		let f1 = sqlx::query_as::<_, File>(&q_shared).fetch_all(&mut *db).await.unwrap();
+		let f0 = sqlx::query_as::<_, File>(&q_owner).fetch_all(db.as_mut()).await.unwrap();
+		let f1 = sqlx::query_as::<_, File>(&q_shared).fetch_all(db.as_mut()).await.unwrap();
 		[f0, f1]
 	}
 
@@ -55,33 +52,33 @@ impl UserFiles {
 		let q = format!("SELECT F.* FROM UserFiles AS UF JOIN Users AS U ON UF.UserID = U.ID JOIN Files AS F ON F.ID = UF.FileID WHERE U.ID = {} AND F.ID = {}",
 						user.id, file_id);
 		sqlx::query_as::<_, File>(&q)
-			.fetch_one(db).await.ok()
+			.fetch_one(db.as_mut()).await.ok()
 	}
 
 	pub async fn delete(db: &mut PoolConnection<Sqlite>, user: &User, file: &File) -> Result<bool, String> {
 		let q = format!("SELECT UF.* FROM UserFiles AS UF JOIN Users AS U ON UF.UserID = U.ID JOIN Files AS F ON F.ID = UF.FileID WHERE U.ID = {} AND F.ID = {}",
 						user.id, file.id);
-		match sqlx::query_as::<_, UserFiles>(&q).fetch_one(&mut *db).await {
+		match sqlx::query_as::<_, UserFiles>(&q).fetch_one(db.as_mut()).await {
 			Err(err) => {
 				println!("{:?}", err);
 				Err("Nie masz dostępu do tego pliku".to_string())
 			}
-			Ok(UF) => {
-				match UF.Owner == true {
+			Ok(uf) => {
+				match uf.Owner == true {
 					true => {
 						let q_del_mine = format!("DELETE FROM UserFiles WHERE FileID = {}", file.id);
-						let deb = sqlx::query_as::<_, UserFiles>(&q_del_mine).fetch_optional(&mut *db).await;
+						let deb = sqlx::query_as::<_, UserFiles>(&q_del_mine).fetch_optional(db.as_mut()).await;
 						println!("\t{:?}", &deb);
 
-						let deb_file = sqlx::query_as::<_,File>(&format!("DELETE FROM Files WHERE ID={}",file.id)).fetch_all(&mut *db).await;
+						let deb_file = sqlx::query_as::<_,File>(&format!("DELETE FROM Files WHERE ID={}",file.id)).fetch_all(db.as_mut()).await;
 						println!("\t{:?}", &deb_file);
 
 						Ok(true)
 					}
 					false => {
 						println!("Usuwam udostępnienie!");
-						let q_del_share = format!("DELETE FROM UserFiles WHERE ID = {}", UF.id);
-						let deb = sqlx::query_as::<_, UserFiles>(&q_del_share).fetch_optional(&mut *db).await;
+						let q_del_share = format!("DELETE FROM UserFiles WHERE ID = {}", uf.id);
+						let deb = sqlx::query_as::<_, UserFiles>(&q_del_share).fetch_optional(db.as_mut()).await;
 						println!("\t{:?}", &deb);
 						Ok(false)
 					}
@@ -93,7 +90,7 @@ impl UserFiles {
 	pub async fn sharing_users_of_file(&self,db: &mut PoolConnection<Sqlite>)->Result<Vec<User>,String>{
 		if self.Owner == true{
 			let q = format!("SELECT * FROM UserFiles as UF JOIN Users AS U ON U.ID = UF.UserID WHERE UF.FileID = {} AND Owner = 0",self.FileID);
-			match sqlx::query_as::<_, User>(&q).fetch_all(&mut *db).await{
+			match sqlx::query_as::<_, User>(&q).fetch_all(db.as_mut()).await{
 				Ok(users) => Ok(users),
 				Err(er) => Err(format!("{:?}",er))
 			}
@@ -103,25 +100,26 @@ impl UserFiles {
 	}
 
 	pub async fn add_shared_user(db: &mut PoolConnection<Sqlite>, user_owner: &User, file: &File, new_user: String)->Result<(), String>{
-		if user_owner.clone().Username.ne(&new_user) {
+		if user_owner.Username.ne(&new_user) {
 			match UserFiles::get_from_user_and_file(db, &user_owner, &file).await {
 				Ok(uf) => {
 					if uf.Owner == true { // adding as owner is OK
 
 						let q0 = format!("SELECT * FROM Users WHERE Username = '{}'", new_user);
-						match sqlx::query_as::<_, User>(&q0).fetch_one(&mut *db).await {
+						match sqlx::query_as::<_, User>(&q0).fetch_one(db.as_mut()).await {
 							Ok(shared_user) => { // user with provided username exist
 
 								// check if provided user is not already added to this file
 								if !uf.sharing_users_of_file(db).await.unwrap().contains(&shared_user) {
 									let new_sharing = UserFiles::new(shared_user.id, file.id, false);
-									new_sharing.insert(db).await;
+									let _ = new_sharing.insert(db).await;
 									Ok(())
 								} else {
 									Err(format!("Plik <strong>{}</strong> był już udostępniony użytkownikowi <strong>{}</strong>", file.Filename, new_user))
 								}
 							}
-							Err(er0) => { // user with provided nick does not exist
+							Err(eeee) => { // user with provided nick does not exist
+								println!("user_files: {:?}", &eeee);
 								Err(format!("Użytkownik o nicku <strong>{}</strong> nie istnieje!", new_user))
 							}
 						}
@@ -129,7 +127,7 @@ impl UserFiles {
 						Err(format!("Nie jesteś właścicielem pliku <strong>{}</strong>!", file.Filename))
 					}
 				}
-				Err(er) => {
+				Err(_) => {
 					Err(format!("Nie masz dostępu do pliku <strong>{}</strong>", file.Filename))
 				}
 			}

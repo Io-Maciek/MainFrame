@@ -1,18 +1,13 @@
-use std::collections::HashMap;
-use std::fmt::{Display, Formatter, write};
+use std::fmt::{Display, Formatter};
 use crate::{File, sql_struct, UserFiles};
 use crate::sql_traits::{Insertable, Queryable};
 use crate::SQL;
 use rocket_db_pools::Connection;
 use data_encoding::HEXUPPER;
-use std::num::NonZeroU32;
-use ring::{digest, pbkdf2, rand};
-use ring::error::Unspecified;
 use ring::rand::SecureRandom;
 use rocket::http::{Cookie, CookieJar};
-use crate::user_maker::UserMaker;
 use sqlx::pool::PoolConnection;
-use sqlx::{Error, Sqlite}; // Mssql
+use sqlx::Sqlite; // Mssql
 use rocket::serde::Serialize;
 
 //pub struct User<Sqlite>{
@@ -73,16 +68,16 @@ impl User {
 		let encoded_session = HEXUPPER.encode(&s);
 
 		self.SessionID = Some(encoded_session.clone());
-		self.update(db).await;
+		let _ = self.update(db).await;
 
-		jar.add(Cookie::build("session_id", encoded_session).http_only(true).finish());
+		jar.add(Cookie::build(("SessionID",encoded_session)).http_only(true).build());
 	}
 
 	pub async fn get_from_cookies(db: &mut PoolConnection<Sqlite>, jar: &CookieJar<'_>) -> Option<User> {
-		match jar.get("session_id") {
+		match jar.get("SessionID") {
 			None => None,
-			Some(session_id) => {
-				match sqlx::query_as::<_, User>(&format!("SELECT * FROM Users WHERE SessionID='{}'", session_id.value())).fetch_one(&mut *db).await.ok() {
+			Some(SessionID) => {
+				match sqlx::query_as::<_, User>(&format!("SELECT * FROM Users WHERE SessionID='{}'", SessionID.value())).fetch_one(db.as_mut()).await.ok() {
 					Some(user) => Some(user),
 					None => None
 				}
@@ -91,12 +86,12 @@ impl User {
 	}
 
 	pub async fn logout(mut db: Connection<SQL>, jar: &CookieJar<'_>) {
-		match jar.get("session_id") {
+		match jar.get("SessionID") {
 			None => {}
 			Some(sess_id_jar) => {
 				if let Some(mut user) = User::get_from_cookies(&mut *db, jar).await {
 					user.SessionID = None;
-					user.update(&mut *db).await;
+					let _ = user.update(&mut *db).await;
 				}
 				jar.remove(sess_id_jar.clone());
 			}

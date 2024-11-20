@@ -1,7 +1,4 @@
-use std::collections::HashMap;
-use rocket_db_pools::Connection;
 use sqlx::pool::PoolConnection;
-use sqlx::Sqlite;
 
 pub trait Insertable<E>{
 	fn sql_types_string(&self, field: E)->String;
